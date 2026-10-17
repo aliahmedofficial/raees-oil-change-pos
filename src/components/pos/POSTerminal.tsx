@@ -30,10 +30,17 @@ export function POSTerminal() {
       
       // Only check stock limits if inventory tracking is enabled
       if (!product.trackInventory || newQuantity <= product.stock) {
+        const grossAmount = product.price * newQuantity;
+        const discount = existingItem.discountValue !== undefined
+          ? existingItem.discountType === 'percentage'
+            ? grossAmount * Math.min(existingItem.discountValue, 100) / 100
+            : Math.min(existingItem.discountValue, grossAmount)
+          : Math.min(existingItem.discount || 0, grossAmount);
         const updatedItem = {
           ...existingItem,
           quantity: newQuantity,
-          subtotal: product.price * newQuantity - (existingItem.discount || 0)
+          discount,
+          subtotal: grossAmount - discount
         };
         dispatch({ type: 'UPDATE_CART_ITEM', payload: { index: existingItemIndex, item: updatedItem } });
       }
@@ -96,9 +103,14 @@ export function POSTerminal() {
           : item.product.price;
         return sum + (price * item.quantity);
       }, 0);
-      const totalDiscount = state.cart.reduce((sum, item) => sum + (item.discount || 0), 0);
-      const taxAmount = (subtotal - totalDiscount) * (state.settings.taxRate / 100);
-      const total = subtotal - totalDiscount + taxAmount;
+      const totalDiscount = Math.min(subtotal, state.cart.reduce((sum, item) => {
+        const price = item.product.isWeightBased
+          ? (item.product.pricePerUnit || 0) * (item.weight || 1)
+          : item.product.price;
+        return sum + Math.max(0, Math.min(item.discount || 0, price * item.quantity));
+      }, 0));
+      const taxAmount = 0;
+      const total = subtotal - totalDiscount;
 
       const draftSale: Omit<Sale, 'id'> = {
         invoiceNumber: `DRAFT-${Date.now().toString().slice(-6)}`,

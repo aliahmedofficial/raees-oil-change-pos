@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Search, Edit, Trash2, User, Mail, Phone, CreditCard, Eye } from 'lucide-react';
 import { Customer } from '../../types';
+import { formatCurrency } from '../../lib/currency';
 import { useApp } from '../../context/SupabaseAppContext';
 import { CustomerModal } from './CustomerModal';
 import { CustomerDetailModal } from './CustomerDetailModal';
@@ -74,7 +75,7 @@ export function CustomerManager() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100 text-sm font-medium">Total Purchases</p>
-              <p className="text-xl md:text-2xl font-bold">$ {totalPurchases.toFixed(2)}</p>
+              <p className="text-xl md:text-2xl font-bold">{formatCurrency(totalPurchases)}</p>
             </div>
             <CreditCard className="h-8 w-8 text-green-200" />
           </div>
@@ -84,7 +85,7 @@ export function CustomerManager() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-100 text-sm font-medium">Average Purchase</p>
-              <p className="text-xl md:text-2xl font-bold">$ {averagePurchase.toFixed(2)}</p>
+              <p className="text-xl md:text-2xl font-bold">{formatCurrency(averagePurchase)}</p>
             </div>
             <Mail className="h-8 w-8 text-purple-200" />
           </div>
@@ -170,7 +171,7 @@ export function CustomerManager() {
                     <div className="text-sm text-gray-500">{customer.phone}</div>
                   </td>
                   <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                    $ {customer.totalPurchases.toFixed(2)}
+                    {formatCurrency(customer.totalPurchases)}
                   </td>
                   <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">

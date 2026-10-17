@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { Discount, DiscountCondition } from '../../types';
 import { useApp } from '../../context/SupabaseAppContext';
+import { formatCurrency } from '../../lib/currency';
 import { swalConfig } from '../../lib/sweetAlert';
 
 interface DiscountModalProps {
@@ -311,7 +312,7 @@ export function DiscountModal({ isOpen, onClose, discount }: DiscountModalProps)
               {formData.type !== 'free_gift' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {formData.type === 'percentage' ? 'Percentage (%)' : `Amount (${state.settings.currency})`} *
+                    {formData.type === 'percentage' ? 'Percentage (%)' : 'Amount (Rs.)'} *
                   </label>
                   <input
                     type="number"
@@ -329,7 +330,7 @@ export function DiscountModal({ isOpen, onClose, discount }: DiscountModalProps)
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum Amount ({state.settings.currency})
+                  Minimum Amount (Rs.)
                 </label>
                 <input
                   type="number"
@@ -346,7 +347,7 @@ export function DiscountModal({ isOpen, onClose, discount }: DiscountModalProps)
               {formData.type === 'percentage' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Maximum Discount ({state.settings.currency})
+                    Maximum Discount (Rs.)
                   </label>
                   <input
                     type="number"
@@ -378,7 +379,7 @@ export function DiscountModal({ isOpen, onClose, discount }: DiscountModalProps)
                     />
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-medium text-gray-900 truncate block">{product.name}</span>
-                      <span className="text-xs text-gray-500">{state.settings.currency} {product.price.toFixed(2)}</span>
+                      <span className="text-xs text-gray-500">{formatCurrency(product.price)}</span>
                     </div>
                   </label>
                 ))}
@@ -575,26 +576,23 @@ export function DiscountModal({ isOpen, onClose, discount }: DiscountModalProps)
                               className="select"
                             >
                               <option value="">Select Bank</option>
-                              <option value="Bank of Ceylon">Bank of Ceylon</option>
-                              <option value="People's Bank">People's Bank</option>
-                              <option value="Commercial Bank of Ceylon PLC">Commercial Bank of Ceylon PLC</option>
-                              <option value="Hatton National Bank PLC">Hatton National Bank PLC</option>
-                              <option value="Sampath Bank PLC">Sampath Bank PLC</option>
-                              <option value="Nations Trust Bank PLC">Nations Trust Bank PLC</option>
-                              <option value="DFCC Bank PLC">DFCC Bank PLC</option>
-                              <option value="Pan Asia Banking Corporation PLC">Pan Asia Banking Corporation PLC</option>
-                              <option value="Seylan Bank PLC">Seylan Bank PLC</option>
-                              <option value="Union Bank of Colombo PLC">Union Bank of Colombo PLC</option>
-                              <option value="National Development Bank PLC">National Development Bank PLC</option>
-                              <option value="Regional Development Bank">Regional Development Bank</option>
-                              <option value="Sanasa Development Bank PLC">Sanasa Development Bank PLC</option>
-                              <option value="HDFC Bank">HDFC Bank</option>
-                              <option value="Standard Chartered Bank">Standard Chartered Bank</option>
-                              <option value="Citibank N.A.">Citibank N.A.</option>
-                              <option value="MCB Bank Limited">MCB Bank Limited</option>
+                              <option value="National Bank of Pakistan">National Bank of Pakistan</option>
                               <option value="Habib Bank Limited">Habib Bank Limited</option>
-                              <option value="Deutsche Bank AG">Deutsche Bank AG</option>
-                              <option value="ICBC">ICBC</option>
+                              <option value="United Bank Limited">United Bank Limited</option>
+                              <option value="MCB Bank Limited">MCB Bank Limited</option>
+                              <option value="Allied Bank Limited">Allied Bank Limited</option>
+                              <option value="Bank Alfalah">Bank Alfalah</option>
+                              <option value="Meezan Bank">Meezan Bank</option>
+                              <option value="Faysal Bank">Faysal Bank</option>
+                              <option value="Askari Bank">Askari Bank</option>
+                              <option value="Bank of Punjab">Bank of Punjab</option>
+                              <option value="Bank of Khyber">Bank of Khyber</option>
+                              <option value="Soneri Bank">Soneri Bank</option>
+                              <option value="JS Bank">JS Bank</option>
+                              <option value="Standard Chartered Bank Pakistan">Standard Chartered Bank Pakistan</option>
+                              <option value="Dubai Islamic Bank Pakistan">Dubai Islamic Bank Pakistan</option>
+                              <option value="Easypaisa">Easypaisa</option>
+                              <option value="JazzCash">JazzCash</option>
                             </select>
                             <p className="text-xs text-blue-600 mt-1">
                               💡 This condition only applies when payment method is 'Card'

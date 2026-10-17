@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Search, Plus, Package, Scale, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../../types';
 import { useApp } from '../../context/SupabaseAppContext';
+import { formatCurrency } from '../../lib/currency';
 
 interface ProductGridProps {
   onAddToCart: (product: Product, weight?: number) => void;
@@ -163,7 +164,6 @@ export function ProductGrid({ onAddToCart }: ProductGridProps) {
                   product={product}
                   onAddToCart={handleProductClick}
                   isTouchMode={isTouchMode}
-                  currency={state.settings.currency}
                 />
               ))}
             </div>
@@ -192,7 +192,7 @@ export function ProductGrid({ onAddToCart }: ProductGridProps) {
                 </div>
                 <h4 className="font-semibold text-gray-900">{showWeightModal.name}</h4>
                 <p className="text-sm text-gray-600">
-                  {state.settings.currency} {showWeightModal.pricePerUnit?.toFixed(2)} per {showWeightModal.unit}
+                  {formatCurrency(showWeightModal.pricePerUnit || 0)} per {showWeightModal.unit}
                 </p>
               </div>
               
@@ -216,7 +216,7 @@ export function ProductGrid({ onAddToCart }: ProductGridProps) {
                   <div className="flex justify-between text-sm">
                     <span>Total Price:</span>
                     <span className="font-semibold">
-                      {state.settings.currency} {((showWeightModal.pricePerUnit || 0) * parseFloat(weight)).toFixed(2)}
+                      {formatCurrency((showWeightModal.pricePerUnit || 0) * parseFloat(weight))}
                     </span>
                   </div>
                 </div>
@@ -249,10 +249,9 @@ interface ProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
   isTouchMode: boolean;
-  currency: string;
 }
 
-function ProductCard({ product, onAddToCart, isTouchMode, currency }: ProductCardProps) {
+function ProductCard({ product, onAddToCart, isTouchMode }: ProductCardProps) {
   // Only check stock levels if inventory tracking is enabled
   // Default to true if trackInventory is undefined (for backwards compatibility)
   const shouldTrackInventory = product.trackInventory !== false;
@@ -319,7 +318,7 @@ function ProductCard({ product, onAddToCart, isTouchMode, currency }: ProductCar
           
           <div className="flex items-center justify-between">
             <span className={`font-bold text-blue-600 ${isTouchMode ? 'text-lg' : 'text-base'}`}>
-              {currency} {product.isWeightBased ? product.pricePerUnit?.toFixed(2) : product.price.toFixed(2)}
+              {formatCurrency(product.isWeightBased ? product.pricePerUnit || 0 : product.price)}
               {product.isWeightBased && <span className="text-xs text-gray-500">/{product.unit}</span>}
             </span>
             <span className={`text-gray-500 ${

@@ -523,13 +523,15 @@ export const settingsService = {
     if (error) throw error
 
     return {
-      storeName: data.store_name || 'Nextera POS',
+      storeName: data.store_name && !['Nextera POS', 'Nextera POS Store'].includes(data.store_name)
+        ? data.store_name
+        : 'Raees Oil Change',
       storeAddress: data.store_address || '',
       storePhone: data.store_phone || '',
       storeEmail: data.store_email || '',
       storeLogo: data.store_logo || undefined,
-      taxRate: data.tax_rate || 0,
-      currency: data.currency || 'LKR',
+      taxRate: 0,
+      currency: 'PKR',
       interfaceMode: data.interface_mode as any || 'touch',
       autoBackup: data.auto_backup ?? true,
       receiptPrinter: data.receipt_printer ?? true,
@@ -558,8 +560,8 @@ export const settingsService = {
         store_phone: settings.storePhone,
         store_email: settings.storeEmail,
         store_logo: settings.storeLogo,
-        tax_rate: settings.taxRate,
-        currency: settings.currency,
+        tax_rate: 0,
+        currency: 'PKR',
         interface_mode: settings.interfaceMode,
         auto_backup: settings.autoBackup,
         receipt_printer: settings.receiptPrinter,
@@ -574,13 +576,15 @@ export const settingsService = {
     if (error) throw error
 
     return {
-      storeName: data.store_name || 'Nextera POS',
+      storeName: data.store_name && !['Nextera POS', 'Nextera POS Store'].includes(data.store_name)
+        ? data.store_name
+        : 'Raees Oil Change',
       storeAddress: data.store_address || '',
       storePhone: data.store_phone || '',
       storeEmail: data.store_email || '',
       storeLogo: data.store_logo || undefined,
-      taxRate: data.tax_rate || 0,
-      currency: data.currency || 'LKR',
+      taxRate: 0,
+      currency: 'PKR',
       interfaceMode: data.interface_mode as any || 'touch',
       autoBackup: data.auto_backup ?? true,
       receiptPrinter: data.receipt_printer ?? true,

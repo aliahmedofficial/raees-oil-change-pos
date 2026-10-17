@@ -12,6 +12,7 @@ import { Settings } from './components/settings/Settings';
 import { DiscountManager } from './components/discounts/DiscountManager';
 import { UserManager } from './components/users/UserManager';
 
+
 function AppContent() {
   const { user, loading } = useAuth();
   const { state } = useApp();

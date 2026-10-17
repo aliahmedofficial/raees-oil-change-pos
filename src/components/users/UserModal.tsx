@@ -3,7 +3,6 @@ import { X, User, Mail, Lock, Shield, Crown } from 'lucide-react';
 import { User as UserType } from '../../types';
 import { useApp } from '../../context/SupabaseAppContext';
 import { usersService } from '../../lib/services';
-import { supabaseAdmin } from '../../lib/supabase';
 import { swalConfig } from '../../lib/sweetAlert';
 
 interface UserModalProps {
@@ -15,6 +14,7 @@ interface UserModalProps {
 export function UserModal({ isOpen, onClose, user }: UserModalProps) {
   const { state, dispatch } = useApp();
   const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     username: '',
     name: '',
@@ -22,7 +22,7 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
     password: '',
     role: 'cashier' as 'admin' | 'manager' | 'cashier',
     active: true,
-    avatar: ''
+    avatar: '',
   });
 
   useEffect(() => {
@@ -31,10 +31,10 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
         username: user.username,
         name: user.name,
         email: user.email,
-        password: '', // Don't pre-fill password for existing users
+        password: '',
         role: user.role,
         active: user.active,
-        avatar: user.avatar || ''
+        avatar: user.avatar || '',
       });
     } else {
       setFormData({
@@ -44,130 +44,115 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
         password: '',
         role: 'cashier',
         active: true,
-        avatar: ''
+        avatar: '',
       });
     }
-  }, [user]);
+  }, [user, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!user) {
+      swalConfig.error(
+        'New user creation requires a secure server-side admin endpoint. Please configure it before creating users.'
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
-      if (user) {
-        // Update existing user
-        const updatedUser = await usersService.update(user.id, {
-          username: formData.username,
-          name: formData.name,
-          email: formData.email,
-          role: formData.role,
-          active: formData.active,
-          avatar: formData.avatar || undefined
-        });
-        
-        dispatch({ 
-          type: 'SET_USERS', 
-          payload: state.users.map(u => u.id === user.id ? updatedUser : u)
-        });
-      } else {
-        // Create new user
-        if (!formData.password || formData.password.length < 6) {
-          swalConfig.error('Password must be at least 6 characters long');
-          return;
-        }
+      const updatedUser = await usersService.update(user.id, {
+        name: formData.name,
+        role: formData.role,
+        active: formData.active,
+        avatar: formData.avatar || undefined,
+      });
 
-        // First create the auth user
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: formData.email,
-          password: formData.password,
-          email_confirm: true
-        });
+      dispatch({
+        type: 'SET_USERS',
+        payload: state.users.map((existingUser) =>
+          existingUser.id === user.id ? updatedUser : existingUser
+        ),
+      });
 
-        if (authError) throw authError;
-
-        // Then create the user profile directly in the database
-        const { data: profileData, error: profileError } = await supabaseAdmin
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            username: formData.username,
-            name: formData.name,
-            email: formData.email,
-            role: formData.role,
-            permissions: [],
-            active: formData.active,
-            avatar: formData.avatar || null
-          })
-          .select()
-          .single();
-
-        if (profileError) throw profileError;
-
-        const newUser: UserType = {
-          id: profileData.id,
-          username: profileData.username,
-          name: profileData.name,
-          email: profileData.email,
-          role: profileData.role,
-          permissions: profileData.permissions || [],
-          active: profileData.active,
-          avatar: profileData.avatar || undefined
-        };
-
-        dispatch({ 
-          type: 'SET_USERS', 
-          payload: [...state.users, newUser]
-        });
-      }
-
+      swalConfig.success('User updated successfully.');
       onClose();
-    } catch (error: any) {
-      swalConfig.error(`Error ${user ? 'updating' : 'creating'} user: ${error.message}`);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'An unexpected error occurred.';
+
+      swalConfig.error(`Error updating user: ${message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]:
+        type === 'checkbox'
+          ? (e.target as HTMLInputElement).checked
+          : value,
     }));
   };
 
   const rolePermissions = {
-    admin: ['Full system access', 'User management', 'Settings configuration', 'All reports'],
-    manager: ['Sales management', 'Inventory control', 'Customer management', 'Basic reports'],
-    cashier: ['POS operations', 'Basic sales', 'Customer lookup', 'Receipt printing']
+    admin: [
+      'Full system access',
+      'User management',
+      'Settings configuration',
+      'All reports',
+    ],
+    manager: [
+      'Sales management',
+      'Inventory control',
+      'Customer management',
+      'Basic reports',
+    ],
+    cashier: [
+      'POS operations',
+      'Basic sales',
+      'Customer lookup',
+      'Receipt printing',
+    ],
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <h2 className="flex items-center space-x-2 text-xl font-bold text-gray-900">
             <User className="h-6 w-6 text-blue-600" />
             <span>{user ? 'Edit User' : 'Add New User'}</span>
           </h2>
+
           <button
+            type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            disabled={loading}
+            aria-label="Close user form"
+            className="text-gray-400 transition-colors hover:text-gray-600"
           >
             <X className="h-6 w-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 Full Name *
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   name="name"
@@ -181,7 +166,7 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 Username *
               </label>
               <input
@@ -190,65 +175,68 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
                 value={formData.username}
                 onChange={handleChange}
                 required
+                disabled={!!user}
                 className="input"
                 placeholder="Enter username"
-                disabled={!!user} // Disable editing username for existing users
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 Email *
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  disabled={!!user}
                   className="input pl-10"
                   placeholder="Enter email address"
-                  disabled={!!user} // Disable editing email for existing users
                 />
               </div>
             </div>
 
-            {/* Password Field - Only show for new users */}
             {!user && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
                   Password *
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <input
                     type="password"
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    required={!user}
+                    required
                     minLength={6}
+                    autoComplete="new-password"
                     className="input pl-10"
-                    placeholder="Enter password (min 6 characters)"
+                    placeholder="Minimum 6 characters"
                   />
                 </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Account creation will be available after the secure backend is configured.
+                </p>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 Role *
               </label>
               <div className="relative">
-                <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Shield className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <select
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
                   className="select pl-10"
-                  disabled={user?.id === state.currentUser?.id} // Prevent self-role change
+                  disabled={user?.id === state.currentUser?.id}
                 >
                   <option value="cashier">Cashier</option>
                   <option value="manager">Manager</option>
@@ -258,18 +246,24 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
             </div>
           </div>
 
-          {/* Role Permissions Display */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center space-x-2">
-              {formData.role === 'admin' && <Crown className="h-4 w-4 text-amber-500" />}
-              {formData.role === 'manager' && <Shield className="h-4 w-4 text-blue-500" />}
-              {formData.role === 'cashier' && <User className="h-4 w-4 text-gray-500" />}
+          <div className="rounded-xl bg-gray-50 p-4">
+            <h3 className="mb-3 flex items-center space-x-2 text-sm font-semibold text-gray-900">
+              {formData.role === 'admin' && (
+                <Crown className="h-4 w-4 text-amber-500" />
+              )}
+              {formData.role === 'manager' && (
+                <Shield className="h-4 w-4 text-blue-500" />
+              )}
+              {formData.role === 'cashier' && (
+                <User className="h-4 w-4 text-gray-500" />
+              )}
               <span className="capitalize">{formData.role} Permissions</span>
             </h3>
-            <ul className="text-xs text-gray-600 space-y-1">
-              {rolePermissions[formData.role].map((permission, index) => (
-                <li key={index} className="flex items-center space-x-2">
-                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+
+            <ul className="space-y-1 text-xs text-gray-600">
+              {rolePermissions[formData.role].map((permission) => (
+                <li key={permission} className="flex items-center space-x-2">
+                  <span className="h-1 w-1 rounded-full bg-gray-400" />
                   <span>{permission}</span>
                 </li>
               ))}
@@ -277,7 +271,7 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Avatar URL (Optional)
             </label>
             <input
@@ -297,29 +291,33 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
               name="active"
               checked={formData.active}
               onChange={handleChange}
+              disabled={user?.id === state.currentUser?.id}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              disabled={user?.id === state.currentUser?.id} // Prevent self-deactivation
             />
-            <label htmlFor="active" className="text-sm font-medium text-gray-700">
+            <label
+              htmlFor="active"
+              className="text-sm font-medium text-gray-700"
+            >
               Active User
             </label>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-100">
+          <div className="flex justify-end space-x-3 border-t border-gray-100 pt-6">
             <button
               type="button"
               onClick={onClose}
-              className="btn btn-secondary btn-md"
               disabled={loading}
+              className="btn btn-secondary btn-md"
             >
               Cancel
             </button>
+
             <button
               type="submit"
-              className="btn btn-primary btn-md"
               disabled={loading}
+              className="btn btn-primary btn-md"
             >
-              {loading ? 'Saving...' : (user ? 'Update User' : 'Create User')}
+              {loading ? 'Saving...' : 'Update User'}
             </button>
           </div>
         </form>

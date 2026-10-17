@@ -62,6 +62,7 @@ export interface CartItem {
   quantity: number;
   weight?: number; // For weight-based products
   discount: number;
+  discountValue?: number;
   discountType: 'percentage' | 'fixed';
   subtotal: number;
   batchId?: string; // For batch tracking

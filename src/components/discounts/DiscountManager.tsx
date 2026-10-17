@@ -3,6 +3,7 @@ import { Plus, Search, Edit, Trash2, Percent, Gift, Calendar, Users } from 'luci
 import { Discount } from '../../types';
 import { useApp } from '../../context/SupabaseAppContext';
 import { DiscountModal } from './DiscountModal';
+import { formatCurrency } from '../../lib/currency';
 import { format } from 'date-fns';
 import { swalConfig } from '../../lib/sweetAlert';
 
@@ -208,7 +209,7 @@ export function DiscountManager() {
                   </td>
                   <td className="table-cell font-semibold">
                     {discount.type === 'percentage' && `${discount.value}%`}
-                    {discount.type === 'fixed' && `${state.settings.currency} ${discount.value}`}
+                    {discount.type === 'fixed' && formatCurrency(discount.value)}
                     {discount.type === 'free_gift' && 'Free Gift'}
                   </td>
                   <td className="table-cell">

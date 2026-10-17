@@ -6,6 +6,7 @@ import { Sale } from '../../types';
 import { CheckoutModal } from '../pos/CheckoutModal';
 import { salesService } from '../../lib/services';
 import { swalConfig } from '../../lib/sweetAlert';
+import { formatCurrency } from '../../lib/currency';
 
 // Helper function to determine if a sale is a draft
 const isDraftSale = (sale: Sale) => {
@@ -84,12 +85,14 @@ export function TransactionsManager() {
 
   const exportTransactions = () => {
     const csvContent = [
-      ['Receipt #', 'Date', 'Customer', 'Items', 'Total', 'Payment', 'Status', 'Cashier'].join(','),
+      ['Receipt #', 'Date', 'Customer', 'Items', 'Subtotal (PKR)', 'Discount (PKR)', 'Total (PKR)', 'Payment', 'Status', 'Cashier'].join(','),
       ...filteredTransactions.map(sale => [
         sale.receiptNumber ?? '',
         format(new Date(sale.timestamp), 'yyyy-MM-dd HH:mm'),
         sale.customerName || 'Walk-in',
         sale.items.length,
+        sale.subtotal.toFixed(2),
+        sale.discountAmount.toFixed(2),
         sale.total.toFixed(2),
         sale.paymentMethod,
         sale.status,
@@ -132,7 +135,7 @@ export function TransactionsManager() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm font-medium">Total Revenue</p>
-              <p className="text-xl md:text-2xl font-bold">{state.settings.currency} {totalRevenue.toFixed(2)}</p>
+              <p className="text-xl md:text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
             </div>
             <div className="bg-white/20 p-3 rounded-xl">
               <CreditCard className="h-6 w-6" />
@@ -156,7 +159,7 @@ export function TransactionsManager() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-100 text-sm font-medium">Average Sale</p>
-              <p className="text-xl md:text-2xl font-bold">{state.settings.currency} {averageTransaction.toFixed(2)}</p>
+              <p className="text-xl md:text-2xl font-bold">{formatCurrency(averageTransaction)}</p>
             </div>
             <div className="bg-white/20 p-3 rounded-xl">
               <RefreshCw className="h-6 w-6" />
@@ -281,7 +284,7 @@ export function TransactionsManager() {
                   </td>
                   <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-semibold text-gray-900">
-                      {state.settings.currency} {transaction.total.toFixed(2)}
+                      {formatCurrency(transaction.total)}
                     </div>
                   </td>
                   <td className="px-4 md:px-6 py-4 whitespace-nowrap">
@@ -446,17 +449,17 @@ function TransactionDetailModal({ transaction, onClose }: TransactionDetailModal
                   <div>
                     <p className="font-medium text-gray-900">{item.product.name}</p>
                     <p className="text-sm text-gray-600">
-                      {state.settings.currency} {
+                      {formatCurrency(
                         item.product.isWeightBased 
-                          ? (item.product.pricePerUnit || 0).toFixed(2)
-                          : item.product.price.toFixed(2)
-                      } {item.product.isWeightBased ? `per ${item.product.unit}` : ''} × {
+                          ? item.product.pricePerUnit || 0
+                          : item.product.price
+                      )} {item.product.isWeightBased ? `per ${item.product.unit}` : ''} × {
                         item.weight ? `${item.weight}${item.product.unit}` : item.quantity
                       }
                     </p>
                   </div>
                   <p className="font-semibold text-gray-900">
-                    {state.settings.currency} {item.subtotal.toFixed(2)}
+                    {formatCurrency(item.subtotal)}
                   </p>
                 </div>
               ))}
@@ -467,21 +470,17 @@ function TransactionDetailModal({ transaction, onClose }: TransactionDetailModal
           <div className="space-y-2 pt-4 border-t border-gray-200">
             <div className="flex justify-between">
               <span className="text-gray-600">Subtotal:</span>
-              <span className="font-medium">{state.settings.currency} {transaction.subtotal.toFixed(2)}</span>
+              <span className="font-medium">{formatCurrency(transaction.subtotal)}</span>
             </div>
             {transaction.discountAmount > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>Discount:</span>
-                <span className="font-medium">-{state.settings.currency} {transaction.discountAmount.toFixed(2)}</span>
+                <span className="font-medium">-{formatCurrency(transaction.discountAmount)}</span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-gray-600">Tax:</span>
-              <span className="font-medium">{state.settings.currency} {transaction.taxAmount.toFixed(2)}</span>
-            </div>
             <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
               <span>Total:</span>
-              <span>{state.settings.currency} {transaction.total.toFixed(2)}</span>
+              <span>{formatCurrency(transaction.total)}</span>
             </div>
           </div>
 

@@ -387,7 +387,7 @@ export function ProductModal({ isOpen, onClose, product }: ProductModalProps) {
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price per Unit *
+                      Price per Unit (Rs.) *
                     </label>
                     <input
                       type="number"
@@ -423,7 +423,7 @@ export function ProductModal({ isOpen, onClose, product }: ProductModalProps) {
               ) : (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sale Price *
+                    Sale Price (Rs.) *
                   </label>
                   <input
                     type="number"
@@ -441,7 +441,7 @@ export function ProductModal({ isOpen, onClose, product }: ProductModalProps) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cost Price *
+                  Cost Price (Rs.) *
                 </label>
                 <input
                   type="number"
@@ -617,7 +617,7 @@ export function ProductModal({ isOpen, onClose, product }: ProductModalProps) {
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Cost Price
+                          Cost Price (Rs.)
                         </label>
                         <input
                           type="number"
@@ -647,17 +647,6 @@ export function ProductModal({ isOpen, onClose, product }: ProductModalProps) {
 
           <div className="border-t border-gray-200 pt-6">
             <div className="flex space-x-6">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="taxable"
-                  checked={formData.taxable}
-                  onChange={handleChange}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-5 w-5"
-                />
-                <span className="ml-2 text-sm text-gray-700">Taxable</span>
-              </label>
-
               <label className="flex items-center">
                 <input
                   type="checkbox"

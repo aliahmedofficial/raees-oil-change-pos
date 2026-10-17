@@ -16,8 +16,7 @@ export function Settings() {
     storePhone: state.settings.storePhone || '',
     storeEmail: state.settings.storeEmail || '',
     storeLogo: state.settings.storeLogo,
-    taxRate: state.settings.taxRate.toString(),
-    currency: state.settings.currency,
+    currency: 'PKR',
     receiptPrinter: state.settings.receiptPrinter,
     autoBackup: state.settings.autoBackup,
     theme: state.settings.theme || 'light',
@@ -55,7 +54,7 @@ export function Settings() {
       const { settingsService } = await import('../../lib/services');
       const updatedSettings = {
         ...formData,
-        taxRate: parseFloat(formData.taxRate),
+        currency: 'PKR',
         invoiceCounter: parseInt(formData.invoiceCounter),
       };
       
@@ -147,19 +146,12 @@ export function Settings() {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Currency
                     </label>
-                    <select
-                      name="currency"
-                      value={formData.currency}
-                      onChange={handleChange}
-                      disabled={!canEditSettings}
-                      className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${!canEditSettings ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                    >
-                      <option value="USD">USD - US Dollar</option>
-                      <option value="EUR">EUR - Euro</option>
-                      <option value="GBP">GBP - British Pound</option>
-                      <option value="CAD">CAD - Canadian Dollar</option>
-                      <option value="LKR">LKR - Sri Lankan Rupee</option>
-                    </select>
+                    <input
+                      type="text"
+                      value="PKR - Pakistani Rupee"
+                      readOnly
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100"
+                    />
                   </div>
                 </div>
 
@@ -197,22 +189,7 @@ export function Settings() {
               <h2 className="text-xl font-bold text-gray-900">Financial Settings</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Tax Rate (%)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="taxRate"
-                  value={formData.taxRate}
-                  onChange={handleChange}
-                  disabled={!canEditSettings}
-                  className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${!canEditSettings ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                />
-              </div>
-            </div>
+            <p className="text-sm text-gray-600">All prices and sales are recorded in Pakistani Rupees (PKR).</p>
           </div>
 
           {/* Invoice Settings */}

@@ -1,4 +1,4 @@
-# Nextera POS System
+# Raees Oil Change POS
 
 A modern, feature-rich Point of Sale (POS) system built with React, TypeScript, and Supabase. Designed for retail businesses of all sizes with comprehensive inventory management, sales tracking, customer management, and analytics.
 
@@ -210,8 +210,8 @@ The application requires several tables in Supabase:
 - **Touch Mode**: Larger buttons and touch-friendly interface
 
 ### Currency and Localization
-- Configurable currency symbol and format
-- Tax rate configuration
+- Pakistani Rupees (PKR), formatted as Rs. 1,250.00
+- Sale totals use subtotal minus discount
 - Invoice number formatting
 
 

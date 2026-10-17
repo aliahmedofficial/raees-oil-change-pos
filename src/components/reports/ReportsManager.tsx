@@ -3,6 +3,7 @@ import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, Line
 import { DollarSign, ShoppingCart, Users, TrendingUp, Download, BarChart3 } from 'lucide-react';
 import { useApp } from '../../context/SupabaseAppContext';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { formatCurrency } from '../../lib/currency';
 
 export function ReportsManager() {
   const { state } = useApp();
@@ -203,7 +204,14 @@ export function ReportsManager() {
     });
   }, [state.products, filteredSales, reportType]);
 
-  const COLORS = ['#2563EB', '#059669', '#D97706', '#DC2626', '#7C3AED', '#EC4899'];
+  const COLORS = [
+    'var(--raees-gold)',
+    'var(--raees-ink)',
+    'var(--raees-bronze)',
+    'var(--raees-line)',
+    'var(--raees-gold-light)',
+    'var(--raees-text)',
+  ];
 
   const exportReport = () => {
     let csvHeader = '';
@@ -211,7 +219,7 @@ export function ReportsManager() {
     let fileName = '';
 
     if (reportType === 'sales') {
-      csvHeader = 'Date,Invoice Number,Customer,Items,Total,Discount,Cashier\n';
+      csvHeader = 'Date,Invoice Number,Customer,Items,Total (PKR),Discount (PKR),Cashier\n';
       csvData = filteredSales.map(sale => {
         const customerName = sale.customerId ? state.customers.find(c => c.id === sale.customerId)?.name || 'Walk-in Customer' : 'Walk-in Customer';
         const itemCount = sale.items.length;
@@ -219,13 +227,13 @@ export function ReportsManager() {
       }).join('\n');
       fileName = `pos-sales-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     } else if (reportType === 'customers') {
-      csvHeader = 'Customer Name,Total Spent,Total Transactions,Total Items,Avg Transaction Value,Last Purchase\n';
+      csvHeader = 'Customer Name,Total Spent (PKR),Total Transactions,Total Items,Avg Transaction Value (PKR),Last Purchase\n';
       csvData = customerData.map(customer => {
         return `${customer.name},${customer.totalSpent.toFixed(2)},${customer.totalTransactions},${customer.totalItems},${customer.avgTransactionValue.toFixed(2)},${format(customer.lastPurchase, 'yyyy-MM-dd HH:mm:ss')}`;
       }).join('\n');
       fileName = `pos-customers-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     } else if (reportType === 'inventory') {
-      csvHeader = 'Product Name,SKU,Category,Current Stock,Min Stock,Stock Status,Cost Price,Selling Price,Stock Value,Potential Revenue,Sold Quantity,Revenue,Turnover Ratio,Profit Margin %,Active\n';
+      csvHeader = 'Product Name,SKU,Category,Current Stock,Min Stock,Stock Status,Cost Price (PKR),Selling Price (PKR),Stock Value (PKR),Potential Revenue (PKR),Sold Quantity,Revenue (PKR),Turnover Ratio,Profit Margin %,Active\n';
       csvData = inventoryData.map(item => {
         return `${item.name},${item.sku},${item.category},${item.currentStock},${item.minStock},${item.stockStatus},${item.costPrice.toFixed(2)},${item.sellingPrice.toFixed(2)},${item.stockValue.toFixed(2)},${item.potentialRevenue.toFixed(2)},${item.soldQuantity},${item.revenue.toFixed(2)},${item.turnoverRatio.toFixed(2)},${item.profitMargin.toFixed(2)},${item.active ? 'Yes' : 'No'}`;
       }).join('\n');
@@ -332,7 +340,7 @@ export function ReportsManager() {
             <div className="flex items-center justify-between relative z-10">
               <div>
                 <p className="text-green-100 text-sm font-medium">Total Revenue</p>
-                <p className="text-xl lg:text-2xl font-bold">{state.settings.currency} {totalRevenue.toFixed(2)}</p>
+                <p className="text-xl lg:text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
               </div>
               <div className="bg-white/20 p-3 rounded-2xl">
                 <DollarSign className="h-6 w-6 lg:h-8 lg:w-8" />
@@ -356,7 +364,7 @@ export function ReportsManager() {
             <div className="flex items-center justify-between relative z-10">
               <div>
                 <p className="text-purple-100 text-sm font-medium">Avg. Transaction</p>
-                <p className="text-xl lg:text-2xl font-bold">{state.settings.currency} {averageTransaction.toFixed(2)}</p>
+                <p className="text-xl lg:text-2xl font-bold">{formatCurrency(averageTransaction)}</p>
               </div>
               <div className="bg-white/20 p-3 rounded-2xl">
                 <TrendingUp className="h-6 w-6 lg:h-8 lg:w-8" />
@@ -368,7 +376,7 @@ export function ReportsManager() {
             <div className="flex items-center justify-between relative z-10">
               <div>
                 <p className="text-orange-100 text-sm font-medium">Total Discounts</p>
-                <p className="text-xl lg:text-2xl font-bold">{state.settings.currency} {totalDiscounts.toFixed(2)}</p>
+                <p className="text-xl lg:text-2xl font-bold">{formatCurrency(totalDiscounts)}</p>
               </div>
               <div className="bg-white/20 p-3 rounded-2xl">
                 <Users className="h-6 w-6 lg:h-8 lg:w-8" />
@@ -408,7 +416,7 @@ export function ReportsManager() {
             <div className="flex items-center justify-between relative z-10">
               <div>
                 <p className="text-purple-100 text-sm font-medium">Avg. Customer Value</p>
-                <p className="text-xl lg:text-2xl font-bold">{state.settings.currency} {(customerData.reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(customerData.filter(c => c.totalTransactions > 0).length, 1)).toFixed(2)}</p>
+                <p className="text-xl lg:text-2xl font-bold">{formatCurrency(customerData.reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(customerData.filter(c => c.totalTransactions > 0).length, 1))}</p>
               </div>
               <div className="bg-white/20 p-3 rounded-2xl">
                 <DollarSign className="h-6 w-6 lg:h-8 lg:w-8" />
@@ -421,7 +429,7 @@ export function ReportsManager() {
               <div>
                 <p className="text-orange-100 text-sm font-medium">Top Customer</p>
                 <p className="text-lg lg:text-xl font-bold">{customerData[0]?.name || 'N/A'}</p>
-                <p className="text-orange-100 text-xs">{customerData[0] ? `${state.settings.currency} ${customerData[0].totalSpent.toFixed(2)}` : ''}</p>
+                <p className="text-orange-100 text-xs">{customerData[0] ? formatCurrency(customerData[0].totalSpent) : ''}</p>
               </div>
               <div className="bg-white/20 p-3 rounded-2xl">
                 <TrendingUp className="h-6 w-6 lg:h-8 lg:w-8" />
@@ -461,7 +469,7 @@ export function ReportsManager() {
             <div className="flex items-center justify-between relative z-10">
               <div>
                 <p className="text-green-100 text-sm font-medium">Total Stock Value</p>
-                <p className="text-xl lg:text-2xl font-bold">{state.settings.currency} {inventoryData.reduce((sum, item) => sum + item.stockValue, 0).toFixed(2)}</p>
+                <p className="text-xl lg:text-2xl font-bold">{formatCurrency(inventoryData.reduce((sum, item) => sum + item.stockValue, 0))}</p>
               </div>
               <div className="bg-white/20 p-3 rounded-2xl">
                 <DollarSign className="h-6 w-6 lg:h-8 lg:w-8" />
@@ -473,7 +481,7 @@ export function ReportsManager() {
             <div className="flex items-center justify-between relative z-10">
               <div>
                 <p className="text-purple-100 text-sm font-medium">Potential Revenue</p>
-                <p className="text-xl lg:text-2xl font-bold">{state.settings.currency} {inventoryData.reduce((sum, item) => sum + item.potentialRevenue, 0).toFixed(2)}</p>
+                <p className="text-xl lg:text-2xl font-bold">{formatCurrency(inventoryData.reduce((sum, item) => sum + item.potentialRevenue, 0))}</p>
               </div>
               <div className="bg-white/20 p-3 rounded-2xl">
                 <TrendingUp className="h-6 w-6 lg:h-8 lg:w-8" />
@@ -494,17 +502,17 @@ export function ReportsManager() {
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-                <YAxis stroke="#6b7280" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--raees-paper)" />
+                <XAxis dataKey="date" stroke="var(--raees-line)" fontSize={12} />
+                <YAxis stroke="var(--raees-line)" fontSize={12} tickFormatter={(value) => formatCurrency(Number(value))} />
                 <Tooltip 
                   formatter={(value: any, name: string) => [
-                    name === 'sales' ? `${state.settings.currency} ${Number(value).toFixed(2)}` : value,
+                    name === 'sales' ? formatCurrency(Number(value)) : value,
                     name === 'sales' ? 'Sales' : 'Transactions'
                   ]}
                   contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: 'var(--raees-white)',
+                    border: '1px solid var(--raees-line)',
                     borderRadius: '12px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                   }}
@@ -513,20 +521,20 @@ export function ReportsManager() {
                 <Line 
                   type="monotone" 
                   dataKey="sales" 
-                  stroke="#2563EB" 
+                  stroke="var(--raees-gold)"
                   strokeWidth={3} 
                   name="Sales"
-                  dot={{ fill: '#2563EB', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#2563EB', strokeWidth: 2 }}
+                  dot={{ fill: 'var(--raees-gold)', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: 'var(--raees-gold)', strokeWidth: 2 }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="transactions" 
-                  stroke="#059669" 
+                  stroke="var(--raees-bronze)"
                   strokeWidth={3} 
                   name="Transactions"
-                  dot={{ fill: '#059669', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#059669', strokeWidth: 2 }}
+                  dot={{ fill: 'var(--raees-bronze)', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: 'var(--raees-bronze)', strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -547,7 +555,7 @@ export function ReportsManager() {
                   labelLine={false}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={100}
-                  fill="#8884d8"
+                  fill="var(--raees-gold)"
                   dataKey="value"
                 >
                   {categoryData.map((_, index) => (
@@ -555,10 +563,10 @@ export function ReportsManager() {
                   ))}
                 </Pie>
                 <Tooltip 
-                  formatter={(value: any) => [`${state.settings.currency} ${Number(value).toFixed(2)}`, 'Revenue']}
+                  formatter={(value: any) => [formatCurrency(Number(value)), 'Revenue']}
                   contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: 'var(--raees-white)',
+                    border: '1px solid var(--raees-line)',
                     borderRadius: '12px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                   }}
@@ -583,17 +591,17 @@ export function ReportsManager() {
                 spending: customer.totalSpent,
                 transactions: customer.totalTransactions
               }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
-                <YAxis stroke="#6b7280" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--raees-paper)" />
+                <XAxis dataKey="name" stroke="var(--raees-line)" fontSize={12} />
+                <YAxis stroke="var(--raees-line)" fontSize={12} tickFormatter={(value) => formatCurrency(Number(value))} />
                 <Tooltip 
                   formatter={(value: any, name: string) => [
-                    name === 'spending' ? `${state.settings.currency} ${Number(value).toFixed(2)}` : value,
+                    name === 'spending' ? formatCurrency(Number(value)) : value,
                     name === 'spending' ? 'Total Spent' : 'Transactions'
                   ]}
                   contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: 'var(--raees-white)',
+                    border: '1px solid var(--raees-line)',
                     borderRadius: '12px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                   }}
@@ -602,11 +610,11 @@ export function ReportsManager() {
                 <Line 
                   type="monotone" 
                   dataKey="spending" 
-                  stroke="#2563EB" 
+                  stroke="var(--raees-gold)"
                   strokeWidth={3} 
                   name="Total Spent"
-                  dot={{ fill: '#2563EB', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#2563EB', strokeWidth: 2 }}
+                  dot={{ fill: 'var(--raees-gold)', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: 'var(--raees-gold)', strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -635,18 +643,18 @@ export function ReportsManager() {
                   labelLine={false}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={100}
-                  fill="#8884d8"
+                  fill="var(--raees-gold)"
                   dataKey="value"
                 >
-                  <Cell fill="#059669" />
-                  <Cell fill="#D97706" />
-                  <Cell fill="#DC2626" />
+                  <Cell fill="var(--raees-bronze)" />
+                  <Cell fill="var(--raees-gold)" />
+                  <Cell fill="var(--raees-ink)" />
                 </Pie>
                 <Tooltip 
                   formatter={(value: any) => [value, 'Products']}
                   contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: 'var(--raees-white)',
+                    border: '1px solid var(--raees-line)',
                     borderRadius: '12px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                   }}
@@ -675,7 +683,7 @@ export function ReportsManager() {
                   labelLine={false}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={100}
-                  fill="#8884d8"
+                  fill="var(--raees-gold)"
                   dataKey="value"
                 >
                   {categoryData.map((_, index) => (
@@ -683,10 +691,10 @@ export function ReportsManager() {
                   ))}
                 </Pie>
                 <Tooltip 
-                  formatter={(value: any) => [`${state.settings.currency} ${Number(value).toFixed(2)}`, 'Stock Value']}
+                  formatter={(value: any) => [formatCurrency(Number(value)), 'Stock Value']}
                   contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: 'var(--raees-white)',
+                    border: '1px solid var(--raees-line)',
                     borderRadius: '12px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                   }}
@@ -732,10 +740,10 @@ export function ReportsManager() {
                       <span className="badge badge-info">{product.quantity}</span>
                     </td>
                     <td className="table-cell font-semibold text-green-600">
-                      {state.settings.currency} {product.revenue.toFixed(2)}
+                      {formatCurrency(product.revenue)}
                     </td>
                     <td className="table-cell text-gray-600">
-                      {state.settings.currency} {(product.revenue / product.quantity).toFixed(2)}
+                      {formatCurrency(product.revenue / product.quantity)}
                     </td>
                   </tr>
                 ))}
@@ -777,7 +785,7 @@ export function ReportsManager() {
                       </div>
                     </td>
                     <td className="table-cell font-semibold text-green-600">
-                      {state.settings.currency} {customer.totalSpent.toFixed(2)}
+                      {formatCurrency(customer.totalSpent)}
                     </td>
                     <td className="table-cell">
                       <span className="badge badge-info">{customer.totalTransactions}</span>
@@ -786,7 +794,7 @@ export function ReportsManager() {
                       <span className="badge badge-secondary">{customer.totalItems}</span>
                     </td>
                     <td className="table-cell text-gray-600">
-                      {state.settings.currency} {customer.avgTransactionValue.toFixed(2)}
+                      {formatCurrency(customer.avgTransactionValue)}
                     </td>
                     <td className="table-cell text-gray-600">
                       {format(customer.lastPurchase, 'MMM dd, yyyy')}
@@ -852,13 +860,13 @@ export function ReportsManager() {
                       </span>
                     </td>
                     <td className="table-cell font-semibold text-blue-600">
-                      {state.settings.currency} {item.stockValue.toFixed(2)}
+                      {formatCurrency(item.stockValue)}
                     </td>
                     <td className="table-cell">
                       <span className="badge badge-info">{item.soldQuantity}</span>
                     </td>
                     <td className="table-cell font-semibold text-green-600">
-                      {state.settings.currency} {item.revenue.toFixed(2)}
+                      {formatCurrency(item.revenue)}
                     </td>
                     <td className="table-cell">
                       <span className={`badge ${

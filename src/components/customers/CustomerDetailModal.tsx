@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, User, Mail, Phone, MapPin, CreditCard, Calendar, ShoppingBag, Receipt } from 'lucide-react';
 import { Customer, Sale } from '../../types';
+import { formatCurrency } from '../../lib/currency';
 import { useApp } from '../../context/SupabaseAppContext';
 import { format } from 'date-fns';
 
@@ -90,7 +91,7 @@ export function CustomerDetailModal({ customer, onClose }: CustomerDetailModalPr
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-green-100 text-sm font-medium">Total Spent</p>
-                      <p className="text-2xl font-bold">{state.settings.currency} {totalSpent.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">{formatCurrency(totalSpent)}</p>
                     </div>
                     <ShoppingBag className="h-8 w-8 text-green-200" />
                   </div>
@@ -110,7 +111,7 @@ export function CustomerDetailModal({ customer, onClose }: CustomerDetailModalPr
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-purple-100 text-sm font-medium">Avg. Transaction</p>
-                      <p className="text-2xl font-bold">{state.settings.currency} {averageTransaction.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">{formatCurrency(averageTransaction)}</p>
                     </div>
                     <CreditCard className="h-8 w-8 text-purple-200" />
                   </div>
@@ -120,7 +121,7 @@ export function CustomerDetailModal({ customer, onClose }: CustomerDetailModalPr
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-orange-100 text-sm font-medium">Credit Available</p>
-                      <p className="text-2xl font-bold">{state.settings.currency} {creditAvailable.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">{formatCurrency(creditAvailable)}</p>
                     </div>
                     <CreditCard className="h-8 w-8 text-orange-200" />
                   </div>
@@ -197,15 +198,15 @@ export function CustomerDetailModal({ customer, onClose }: CustomerDetailModalPr
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Credit Limit</p>
-                    <p className="text-xl font-bold text-gray-900">{state.settings.currency} {customer.creditLimit.toFixed(2)}</p>
+                    <p className="text-xl font-bold text-gray-900">{formatCurrency(customer.creditLimit)}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-600">Credit Used</p>
-                    <p className="text-xl font-bold text-red-600">{state.settings.currency} {customer.creditUsed.toFixed(2)}</p>
+                    <p className="text-xl font-bold text-red-600">{formatCurrency(customer.creditUsed)}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-600">Available Credit</p>
-                    <p className="text-xl font-bold text-green-600">{state.settings.currency} {creditAvailable.toFixed(2)}</p>
+                    <p className="text-xl font-bold text-green-600">{formatCurrency(creditAvailable)}</p>
                   </div>
                 </div>
                 <div className="mt-4">
@@ -245,7 +246,7 @@ export function CustomerDetailModal({ customer, onClose }: CustomerDetailModalPr
                         </div>
                         <div className="text-right">
                           <p className="text-xl font-bold text-gray-900">
-                            {state.settings.currency} {transaction.total.toFixed(2)}
+                            {formatCurrency(transaction.total)}
                           </p>
                           <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(transaction.status)}`}>
                             {transaction.status}
@@ -275,7 +276,7 @@ export function CustomerDetailModal({ customer, onClose }: CustomerDetailModalPr
                             {transaction.items.map((item, index) => (
                               <div key={index} className="flex justify-between text-sm">
                                 <span>{item.product.name} × {item.quantity}</span>
-                                <span>{state.settings.currency} {item.subtotal.toFixed(2)}</span>
+                                <span>{formatCurrency(item.subtotal)}</span>
                               </div>
                             ))}
                           </div>

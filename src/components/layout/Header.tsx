@@ -106,7 +106,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                 <h1 className="text-lg lg:text-xl font-bold text-gray-900 truncate max-w-48">
                   {state.settings.storeName}
                 </h1>
-                <p className="text-xs text-gray-500 hidden lg:block">Nextera POS System</p>
+                <p className="text-xs text-gray-500 hidden lg:block">Point of Sale</p>
               </div>
             </div>
             

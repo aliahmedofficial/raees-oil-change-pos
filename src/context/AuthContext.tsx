@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
-import { User as SupabaseUser, Session } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
-import { User } from '../types'
-import { usersService } from '../lib/services'
-import { swalConfig } from '../lib/sweetAlert'
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import Swal from 'sweetalert2';
+import { supabase } from '../lib/supabase';
+import { User } from '../types';
+import { usersService } from '../lib/services';
+import { swalConfig } from '../lib/sweetAlert';
 
 interface AuthContextType {
   user: SupabaseUser | null

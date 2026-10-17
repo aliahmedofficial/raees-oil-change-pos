@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ReceiptPrint } from './ReceiptPrint';
 import { salesService, customersService, productsService } from '../../lib/services';
 import { swalConfig } from '../../lib/sweetAlert';
+import { formatCurrency } from '../../lib/currency';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -34,28 +35,25 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
     holderName: '',
   });
 
-  // Sri Lankan banks list
-  const sriLankanBanks = [
-    'Bank of Ceylon',
-    'People\'s Bank',
-    'Commercial Bank of Ceylon PLC',
-    'Hatton National Bank PLC',
-    'Sampath Bank PLC',
-    'Nations Trust Bank PLC',
-    'DFCC Bank PLC',
-    'Pan Asia Banking Corporation PLC',
-    'Seylan Bank PLC',
-    'Union Bank of Colombo PLC',
-    'National Development Bank PLC',
-    'Regional Development Bank',
-    'Sanasa Development Bank PLC',
-    'HDFC Bank',
-    'Standard Chartered Bank',
-    'Citibank N.A.',
-    'MCB Bank Limited',
+  // Pakistan banks list
+  const pakistanPaymentProviders = [
+    'National Bank of Pakistan',
     'Habib Bank Limited',
-    'Deutsche Bank AG',
-    'ICBC'
+    'United Bank Limited',
+    'MCB Bank Limited',
+    'Allied Bank Limited',
+    'Bank Alfalah',
+    'Meezan Bank',
+    'Faysal Bank',
+    'Askari Bank',
+    'Bank of Punjab',
+    'Bank of Khyber',
+    'Soneri Bank',
+    'JS Bank',
+    'Standard Chartered Bank Pakistan',
+    'Dubai Islamic Bank Pakistan',
+    'Easypaisa',
+    'JazzCash',
   ];
 
   // Function to detect card type from card number
@@ -125,7 +123,12 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
       : item.product.price;
     return sum + (price * item.quantity);
   }, 0);
-  const manualDiscount = state.cart.reduce((sum, item) => sum + (item.discount || 0), 0);
+  const manualDiscount = Math.min(subtotal, state.cart.reduce((sum, item) => {
+    const price = item.product.isWeightBased
+      ? (item.product.pricePerUnit || 0) * (item.weight || 1)
+      : item.product.price;
+    return sum + Math.max(0, Math.min(item.discount || 0, price * item.quantity));
+  }, 0));
 
   // Reset form when modal opens
   useEffect(() => {
@@ -197,6 +200,11 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
             discountAmount = discount.value;
           }
 
+          discountAmount = Math.min(
+            discountAmount,
+            Math.max(0, subtotal - manualDiscount - autoDiscountAmount)
+          );
+
           if (discountAmount > 0) {
             autoDiscountAmount += discountAmount;
             eligibleDiscounts.push({
@@ -217,12 +225,11 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
     if (eligibleDiscounts.length > 0) {
       setShowDiscountAlert(true);
     }
-  }, [isOpen, state.cart, state.selectedCustomer, paymentMethod, subtotal, state.discounts, state.products, cardDetails]);
+  }, [isOpen, state.cart, state.selectedCustomer, paymentMethod, subtotal, manualDiscount, state.discounts, state.products, cardDetails]);
 
   const totalAutoDiscount = appliedDiscounts.reduce((sum, discount) => sum + discount.discountAmount, 0);
-  const totalDiscount = manualDiscount + totalAutoDiscount;
-  const taxAmount = (subtotal - totalDiscount) * (state.settings.taxRate / 100);
-  const total = subtotal - totalDiscount + taxAmount;
+  const totalDiscount = Math.min(subtotal, manualDiscount + totalAutoDiscount);
+  const total = subtotal - totalDiscount;
   const change = parseFloat(amountPaid) - total;
 
   // Check if customer has enough credit limit for credit payment
@@ -272,7 +279,7 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
         items: state.cart,
         subtotal,
         discountAmount: totalDiscount,
-        taxAmount,
+        taxAmount: 0,
         total,
         paymentMethod: paymentMethod as 'cash' | 'card' | 'digital' | 'credit',
         cardDetails: paymentMethod === 'card' ? {
@@ -399,7 +406,7 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
                           <div key={index} className="text-sm text-green-700">
                             <span className="font-medium">{discount.discountName}</span>
                             {discount.type !== 'free_gift' && (
-                              <span className="ml-2">- {state.settings.currency} {discount.discountAmount.toFixed(2)}</span>
+                              <span className="ml-2">- {formatCurrency(discount.discountAmount)}</span>
                             )}
                           </div>
                         ))}
@@ -433,7 +440,7 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
                       <span className="truncate flex-1 mr-2">
                         {item.product.name} × {item.weight ? `${item.weight}${item.product.unit}` : item.quantity}
                       </span>
-                      <span className="font-medium">{state.settings.currency} {item.subtotal.toFixed(2)}</span>
+                      <span className="font-medium">{formatCurrency(item.subtotal)}</span>
                     </div>
                   ))}
                   {freeGifts.map((gift, index) => (
@@ -441,7 +448,7 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
                       <span className="truncate flex-1 mr-2">
                         🎁 {gift.product.name} × {gift.quantity} (FREE)
                       </span>
-                      <span className="font-medium">{state.settings.currency} 0.00</span>
+                      <span className="font-medium">{formatCurrency(0)}</span>
                     </div>
                   ))}
                 </div>
@@ -449,21 +456,17 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
                 <div className="space-y-2 pt-4 border-t border-gray-200">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span className="font-medium">{state.settings.currency} {subtotal.toFixed(2)}</span>
+                    <span className="font-medium">{formatCurrency(subtotal)}</span>
                   </div>
                   {totalDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Total Discount:</span>
-                      <span className="font-medium">-{state.settings.currency} {totalDiscount.toFixed(2)}</span>
+                      <span className="font-medium">-{formatCurrency(totalDiscount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between">
-                    <span>Tax ({state.settings.taxRate}%):</span>
-                    <span className="font-medium">{state.settings.currency} {taxAmount.toFixed(2)}</span>
-                  </div>
                   <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
                     <span>Total:</span>
-                    <span>{state.settings.currency} {total.toFixed(2)}</span>
+                    <span>{formatCurrency(total)}</span>
                   </div>
                 </div>
               </div>
@@ -519,15 +522,15 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
                     <div className="text-sm text-blue-800">
                       <div className="flex justify-between">
                         <span>Credit Limit:</span>
-                        <span>{state.settings.currency} {state.selectedCustomer.creditLimit.toFixed(2)}</span>
+                        <span>{formatCurrency(state.selectedCustomer.creditLimit)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Used:</span>
-                        <span>{state.settings.currency} {state.selectedCustomer.creditUsed.toFixed(2)}</span>
+                        <span>{formatCurrency(state.selectedCustomer.creditUsed)}</span>
                       </div>
                       <div className="flex justify-between font-semibold border-t border-blue-200 pt-1 mt-1">
                         <span>Available:</span>
-                        <span>{state.settings.currency} {(state.selectedCustomer.creditLimit - state.selectedCustomer.creditUsed).toFixed(2)}</span>
+                        <span>{formatCurrency(state.selectedCustomer.creditLimit - state.selectedCustomer.creditUsed)}</span>
                       </div>
                     </div>
                   </div>
@@ -553,7 +556,7 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
                         value={amountPaid}
                         onChange={(e) => setAmountPaid(e.target.value)}
                         className={`input ${isTouchMode ? 'h-12 text-lg' : 'h-11'}`}
-                        placeholder={`Minimum: ${state.settings.currency} ${total.toFixed(2)}`}
+                        placeholder={`Minimum: ${formatCurrency(total)}`}
                         disabled={isProcessing}
                       />
                     </div>
@@ -563,7 +566,7 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
                         <div className="flex justify-between items-center">
                           <span className="font-semibold text-green-800">Change Due:</span>
                           <span className="text-lg font-bold text-green-800">
-                            {state.settings.currency} {change.toFixed(2)}
+                            {formatCurrency(change)}
                           </span>
                         </div>
                       </div>
@@ -591,7 +594,7 @@ export function CheckoutModal({ isOpen, onClose, onComplete }: CheckoutModalProp
                         disabled={isProcessing}
                       >
                         <option value="">Select Bank</option>
-                        {sriLankanBanks.map((bank) => (
+                        {pakistanPaymentProviders.map((bank) => (
                           <option key={bank} value={bank}>{bank}</option>
                         ))}
                       </select>

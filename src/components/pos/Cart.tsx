@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Trash2, Plus, Minus, User, Percent, FileText, ShoppingCart } from 'lucide-react';
 import { CartItem, Customer } from '../../types';
 import { useApp } from '../../context/SupabaseAppContext';
+import { formatCurrency } from '../../lib/currency';
 
 interface CartProps {
   onCheckout: () => void;
@@ -23,10 +24,17 @@ export function Cart({ onCheckout, onSaveDraft }: CartProps) {
       const price = item.product.isWeightBased 
         ? (item.product.pricePerUnit || 0) * (item.weight || 1)
         : item.product.price;
+      const grossAmount = price * newQuantity;
+      const discount = item.discountValue !== undefined
+        ? item.discountType === 'percentage'
+          ? grossAmount * Math.min(item.discountValue, 100) / 100
+          : Math.min(item.discountValue, grossAmount)
+        : Math.min(item.discount || 0, grossAmount);
       const updatedItem = {
         ...item,
         quantity: newQuantity,
-        subtotal: (price * newQuantity) - (item.discount || 0)
+        discount,
+        subtotal: grossAmount - discount
       };
       dispatch({ type: 'UPDATE_CART_ITEM', payload: { index, item: updatedItem } });
     }
@@ -41,19 +49,24 @@ export function Cart({ onCheckout, onSaveDraft }: CartProps) {
     const price = item.product.isWeightBased 
       ? (item.product.pricePerUnit || 0) * (item.weight || 1)
       : item.product.price;
+    const grossAmount = price * item.quantity;
+    const discountValue = discountType === 'percentage'
+      ? Math.min(discount, 100)
+      : Math.min(discount, grossAmount);
     let discountAmount = 0;
     
     if (discountType === 'percentage') {
-      discountAmount = (price * item.quantity * discount) / 100;
+      discountAmount = (grossAmount * discountValue) / 100;
     } else {
-      discountAmount = discount;
+      discountAmount = discountValue;
     }
 
     const updatedItem = {
       ...item,
       discount: discountAmount,
+      discountValue,
       discountType,
-      subtotal: (price * item.quantity) - discountAmount
+      subtotal: grossAmount - discountAmount
     };
     
     dispatch({ type: 'UPDATE_CART_ITEM', payload: { index, item: updatedItem } });
@@ -77,12 +90,11 @@ export function Cart({ onCheckout, onSaveDraft }: CartProps) {
       : item.product.price;
     return sum + (price * item.quantity);
   }, 0);
-  const totalDiscount = state.cart.reduce((sum, item) => sum + (item.discount || 0), 0);
-  const taxAmount = (subtotal - totalDiscount) * (state.settings.taxRate / 100);
-  const total = subtotal - totalDiscount + taxAmount;
-
-  // Debug: Log current tax rate (remove this in production)
-  console.log('Current tax rate:', state.settings.taxRate);
+  const totalDiscount = Math.min(
+    subtotal,
+    state.cart.reduce((sum, item) => sum + Math.max(0, item.discount || 0), 0)
+  );
+  const total = subtotal - totalDiscount;
 
   return (
     <div className={`bg-white border-l border-gray-100 flex flex-col h-screen ${
@@ -193,7 +205,6 @@ export function Cart({ onCheckout, onSaveDraft }: CartProps) {
               onRemove={removeFromCart}
               onApplyDiscount={applyDiscount}
               isTouchMode={isTouchMode}
-              currency={state.settings.currency}
             />
           ))
         )}
@@ -205,21 +216,17 @@ export function Cart({ onCheckout, onSaveDraft }: CartProps) {
           <div className="space-y-3">
             <div className="flex justify-between text-gray-600">
               <span>Subtotal:</span>
-              <span className="font-medium">{state.settings.currency} {subtotal.toFixed(2)}</span>
+              <span className="font-medium">{formatCurrency(subtotal)}</span>
             </div>
             {totalDiscount > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>Discount:</span>
-                <span className="font-medium">-{state.settings.currency} {totalDiscount.toFixed(2)}</span>
+                <span className="font-medium">-{formatCurrency(totalDiscount)}</span>
               </div>
             )}
-            <div className="flex justify-between text-gray-600">
-              <span>Tax ({state.settings.taxRate}%):</span>
-              <span className="font-medium">{state.settings.currency} {taxAmount.toFixed(2)}</span>
-            </div>
             <div className="flex justify-between text-xl font-bold text-gray-900 pt-3 border-t border-gray-200">
               <span>Total:</span>
-              <span>{state.settings.currency} {total.toFixed(2)}</span>
+              <span>{formatCurrency(total)}</span>
             </div>
           </div>
 
@@ -258,17 +265,21 @@ interface CartItemCardProps {
   onRemove: (index: number) => void;
   onApplyDiscount: (index: number, discount: number, type: 'percentage' | 'fixed') => void;
   isTouchMode: boolean;
-  currency: string;
 }
 
-function CartItemCard({ item, index, onUpdateQuantity, onRemove, onApplyDiscount, isTouchMode, currency }: CartItemCardProps) {
+function CartItemCard({ item, index, onUpdateQuantity, onRemove, onApplyDiscount, isTouchMode }: CartItemCardProps) {
   const [showDiscountInput, setShowDiscountInput] = useState(false);
   const [discountValue, setDiscountValue] = useState('');
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
 
   const handleDiscountSubmit = () => {
     const value = parseFloat(discountValue);
-    if (!isNaN(value) && value > 0) {
+    const price = item.product.isWeightBased
+      ? (item.product.pricePerUnit || 0) * (item.weight || 1)
+      : item.product.price;
+    const grossAmount = price * item.quantity;
+    const maximumDiscount = discountType === 'percentage' ? 100 : grossAmount;
+    if (Number.isFinite(value) && value > 0 && value <= maximumDiscount) {
       onApplyDiscount(index, value, discountType);
       setShowDiscountInput(false);
       setDiscountValue('');
@@ -285,16 +296,18 @@ function CartItemCard({ item, index, onUpdateQuantity, onRemove, onApplyDiscount
           <p className={`text-gray-600 ${isTouchMode ? 'text-sm' : 'text-xs'}`}>
             {item.product.isWeightBased ? (
               <>
-                {currency} {item.product.pricePerUnit?.toFixed(2)} per {item.product.unit}
+                {formatCurrency(item.product.pricePerUnit || 0)} per {item.product.unit}
                 {item.weight && <span className="ml-2">({item.weight} {item.product.unit})</span>}
               </>
             ) : (
-              <>{currency} {item.product.price.toFixed(2)} each</>
+              <>{formatCurrency(item.product.price)} each</>
             )}
           </p>
           {item.discount > 0 && (
             <p className="text-green-600 text-xs font-medium">
-              Discount: {item.discountType === 'percentage' ? `${item.discount}%` : `${currency} ${item.discount.toFixed(2)}`}
+              Discount: {item.discountType === 'percentage' && item.discountValue !== undefined
+                ? `${item.discountValue}% (${formatCurrency(item.discount)})`
+                : formatCurrency(item.discount)}
             </p>
           )}
         </div>
@@ -339,7 +352,7 @@ function CartItemCard({ item, index, onUpdateQuantity, onRemove, onApplyDiscount
             <Percent className="h-4 w-4" />
           </button>
           <span className={`font-semibold ${isTouchMode ? 'text-base' : 'text-sm'}`}>
-            {currency} {item.subtotal.toFixed(2)}
+            {formatCurrency(item.subtotal)}
           </span>
         </div>
       </div>
@@ -352,13 +365,20 @@ function CartItemCard({ item, index, onUpdateQuantity, onRemove, onApplyDiscount
             className="select text-xs w-20"
           >
             <option value="percentage">%</option>
-            <option value="fixed">{currency}</option>
+            <option value="fixed">Rs.</option>
           </select>
           <input
             type="number"
             placeholder="Discount"
             value={discountValue}
             onChange={(e) => setDiscountValue(e.target.value)}
+            min="0"
+            max={discountType === 'percentage' ? 100 : (
+              (item.product.isWeightBased
+                ? (item.product.pricePerUnit || 0) * (item.weight || 1)
+                : item.product.price) * item.quantity
+            )}
+            step="0.01"
             className="input input-sm flex-1"
           />
           <button
