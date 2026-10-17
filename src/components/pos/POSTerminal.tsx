@@ -8,12 +8,17 @@ import { useApp } from '../../context/SupabaseAppContext';
 import { useAuth } from '../../context/AuthContext';
 import { salesService } from '../../lib/services';
 import { swalConfig } from '../../lib/sweetAlert';
+import { formatCurrency } from '../../lib/currency';
+import { ShoppingCart } from 'lucide-react';
 
 export function POSTerminal() {
   const { state, dispatch } = useApp();
   const { user } = useAuth();
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showMobileCart, setShowMobileCart] = useState(false);
   const [lastSale, setLastSale] = useState<Sale | null>(null);
+  const cartItemCount = state.cart.reduce((count, item) => count + item.quantity, 0);
+  const cartTotal = state.cart.reduce((total, item) => total + item.subtotal, 0);
 
   const addToCart = (product: Product, weight?: number) => {
     // Only check stock if inventory tracking is enabled
@@ -153,11 +158,52 @@ export function POSTerminal() {
   };
 
   return (
-    <div className="flex h-full bg-gray-50">
-      <SalesTabManager />
-      <div className="flex flex-1 overflow-hidden">
+    <div className="flex min-h-[calc(100dvh-4rem)] flex-col bg-gray-50 lg:min-h-[calc(100dvh-5rem)] xl:h-full xl:min-h-0 xl:flex-row xl:overflow-hidden">
+      <div className="xl:hidden">
+        <SalesTabManager orientation="horizontal" />
+      </div>
+      <div className="hidden xl:flex">
+        <SalesTabManager />
+      </div>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col xl:flex-row xl:overflow-hidden">
         <ProductGrid onAddToCart={addToCart} />
-        <Cart onCheckout={handleCheckout} onSaveDraft={saveDraft} />
+        <div className="hidden xl:flex">
+          <Cart onCheckout={handleCheckout} onSaveDraft={saveDraft} />
+        </div>
+        {cartItemCount > 0 && (
+          <div className="sticky bottom-0 z-30 border-t border-gray-200 bg-white p-3 shadow-lg xl:hidden">
+            <button
+              onClick={() => setShowMobileCart(true)}
+              className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl bg-blue-600 px-4 py-3 text-left text-white"
+            >
+              <span className="flex min-w-0 items-center gap-2 font-semibold">
+                <ShoppingCart className="h-5 w-5 flex-shrink-0" />
+                <span className="truncate">Cart - {cartItemCount} items</span>
+              </span>
+              <span className="flex-shrink-0 font-bold">{formatCurrency(cartTotal)}</span>
+            </button>
+          </div>
+        )}
+
+        {showMobileCart && (
+          <div className="fixed inset-0 z-[55] xl:hidden">
+            <button
+              onClick={() => setShowMobileCart(false)}
+              className="absolute inset-0 h-full w-full bg-black/50"
+              aria-label="Close cart"
+            />
+            <div className="absolute inset-y-0 right-0 h-[100dvh] w-[min(100%,28rem)] max-w-full bg-white shadow-2xl">
+              <Cart
+                onCheckout={() => {
+                  setShowMobileCart(false);
+                  handleCheckout();
+                }}
+                onSaveDraft={saveDraft}
+                onClose={() => setShowMobileCart(false)}
+              />
+            </div>
+          </div>
+        )}
         
         <CheckoutModal
           isOpen={showCheckout}

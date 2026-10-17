@@ -94,9 +94,9 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-dvh bg-gray-50 flex flex-col">
       <Header currentView={currentView} onViewChange={setCurrentView} />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 min-h-0 overflow-auto xl:overflow-hidden">
         {state.loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>

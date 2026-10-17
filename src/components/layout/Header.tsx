@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   User, Settings, LogOut, ShoppingCart, Monitor, Smartphone, Bell, Menu, X, Percent,
   Receipt, Package, Users, BarChart3
@@ -16,6 +16,15 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
   const { state, dispatch } = useApp();
   const { signOut } = useAuth();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  useEffect(() => {
+    if (!showMobileMenu) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowMobileMenu(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [showMobileMenu]);
 
   const toggleInterfaceMode = () => {
     const newMode = state.settings.interfaceMode === 'touch' ? 'traditional' : 'touch';
@@ -85,11 +94,11 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
   const navigationItems = getNavigationItems();
 
   return (
-    <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
-      <div className="px-4 lg:px-6">
+    <header className={`bg-white border-b border-gray-100 sticky top-0 ${showMobileMenu ? 'z-[70]' : 'z-40'}`}>
+      <div className="px-3 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo and Store Name */}
-          <div className="flex items-center space-x-4">
+          <div className="flex min-w-0 flex-1 items-center space-x-2 sm:space-x-4">
             <div className="flex items-center space-x-3">
               {state.settings.storeLogo ? (
                 <img 
@@ -102,8 +111,8 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                   <ShoppingCart className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
                 </div>
               )}
-              <div className="hidden sm:block">
-                <h1 className="text-lg lg:text-xl font-bold text-gray-900 truncate max-w-48">
+              <div className="min-w-0">
+                <h1 className="max-w-[8rem] truncate text-sm font-bold text-gray-900 sm:max-w-48 sm:text-lg lg:text-xl">
                   {state.settings.storeName}
                 </h1>
                 <p className="text-xs text-gray-500 hidden lg:block">Point of Sale</p>
@@ -111,7 +120,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
             </div>
             
             {/* Desktop Navigation */}
-            <nav className="hidden xl:flex space-x-1 ml-8">
+            <nav className="hidden 2xl:flex space-x-1 ml-4 2xl:ml-8">
               {navigationItems.map((item) => (
                 <button
                   key={item.id}
@@ -130,7 +139,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
           </div>
 
           {/* Right Side Controls */}
-          <div className="flex items-center space-x-2 lg:space-x-4">
+          <div className="flex flex-shrink-0 items-center space-x-1 sm:space-x-2 lg:space-x-4">
             {/* Interface Mode Toggle - Hidden on mobile */}
             <button
               onClick={toggleInterfaceMode}
@@ -156,7 +165,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
             )}
 
             {/* Notifications */}
-            <button className="p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors relative">
+            <button aria-label="Notifications" className="hidden sm:inline-flex p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors relative">
               <Bell className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
             </button>
@@ -198,7 +207,9 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="xl:hidden p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+              aria-label={showMobileMenu ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={showMobileMenu}
+              className="2xl:hidden inline-flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
             >
               {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -207,8 +218,24 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
 
         {/* Mobile Navigation Menu */}
         {showMobileMenu && (
-          <div className="xl:hidden border-t border-gray-100 py-4 animate-fade-in">
-            <nav className="space-y-2">
+          <>
+            <button
+              className="mobile-nav-backdrop"
+              onClick={() => setShowMobileMenu(false)}
+              aria-label="Dismiss navigation menu"
+            />
+            <nav className="mobile-nav-drawer animate-slide-up" aria-label="Mobile navigation">
+              <div className="mb-3 flex items-center justify-between border-b border-gray-100 px-4 pb-3">
+                <span className="font-semibold text-gray-900">Navigation</span>
+                <button
+                  onClick={() => setShowMobileMenu(false)}
+                  aria-label="Close navigation menu"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-2">
               {navigationItems.map((item) => (
                 <button
                   key={item.id}
@@ -240,15 +267,19 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                 </button>
                 
                 <button
-                  onClick={handleLogout}
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    handleLogout();
+                  }}
                   className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all duration-200"
                 >
                   <LogOut className="h-5 w-5" />
                   <span>Logout</span>
                 </button>
               </div>
+              </div>
             </nav>
-          </div>
+          </>
         )}
       </div>
     </header>

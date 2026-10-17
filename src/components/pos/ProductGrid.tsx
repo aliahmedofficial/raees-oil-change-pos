@@ -80,10 +80,10 @@ export function ProductGrid({ onAddToCart }: ProductGridProps) {
 
   return (
     <>
-      <div className="flex-1 flex flex-col bg-white">
+      <div className="flex min-h-[55dvh] min-w-0 flex-1 flex-col bg-white xl:min-h-0">
         {/* Search and Filter Bar */}
         <div className="p-4 lg:p-6 border-b border-gray-100 bg-white">
-          <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex min-w-0 flex-col gap-3 sm:gap-4 lg:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
@@ -95,7 +95,7 @@ export function ProductGrid({ onAddToCart }: ProductGridProps) {
               />
             </div>
             
-            <div className="relative flex items-center">
+            <div className="relative flex min-w-0 items-center lg:flex-1">
               {/* Left scroll button */}
               {showLeftScroll && (
                 <button
@@ -110,7 +110,7 @@ export function ProductGrid({ onAddToCart }: ProductGridProps) {
               {/* Categories container */}
               <div 
                 ref={categoriesRef}
-                className="flex overflow-x-auto space-x-2 lg:space-x-3 max-w-xl scrollbar-hide scroll-smooth px-6"
+                className="flex min-w-0 w-full max-w-full overflow-x-auto space-x-2 lg:space-x-3 lg:max-w-xl scrollbar-hide scroll-smooth px-6"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {categories.map((category) => (
@@ -143,7 +143,7 @@ export function ProductGrid({ onAddToCart }: ProductGridProps) {
         </div>
 
         {/* Product Grid */}
-        <div className="flex-1 p-4 lg:p-6 overflow-auto">
+        <div className="min-h-0 min-w-0 flex-1 overflow-auto p-3 sm:p-4 lg:p-6">
           {filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64">
               <div className="bg-gray-100 p-6 rounded-3xl mb-4">
@@ -154,9 +154,9 @@ export function ProductGrid({ onAddToCart }: ProductGridProps) {
             </div>
           ) : (
             <div className={`grid gap-4 lg:gap-6 ${
-              isTouchMode 
-                ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
-                : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'
+              isTouchMode
+                ? 'grid-cols-1 min-[375px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4'
+                : 'grid-cols-1 min-[375px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5'
             }`}>
               {filteredProducts.map((product) => (
                 <ProductCard

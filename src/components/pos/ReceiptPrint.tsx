@@ -588,6 +588,62 @@ export function ReceiptPrint({ sale, onClose }: ReceiptPrintProps) {
               box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
             }
           }
+
+          @media screen and (max-width: 640px) {
+            .receipt-brand-row {
+              grid-template-columns: 12mm minmax(0, 1fr);
+              gap: 2mm;
+            }
+
+            .receipt-mark {
+              width: 11mm;
+              height: 11mm;
+              font-size: 14pt;
+            }
+
+            .receipt-brand-row h1 {
+              font-size: 15pt;
+              white-space: normal;
+            }
+
+            .receipt-company-type {
+              grid-column: 2;
+              justify-self: start;
+              align-self: start;
+            }
+
+            .receipt-tagline {
+              font-size: 10pt;
+            }
+
+            .receipt-proprietor {
+              font-size: 9pt;
+            }
+
+            .receipt-items th,
+            .receipt-items td {
+              padding: 1.5mm 1mm;
+              font-size: 8pt;
+            }
+
+            .receipt-money {
+              white-space: normal;
+            }
+
+            .receipt-footer-main {
+              gap: 2mm;
+              padding-right: 3mm;
+              padding-left: 3mm;
+            }
+
+            .receipt-signature {
+              width: 42mm;
+            }
+
+            .receipt-address {
+              font-size: 8pt;
+            }
+          }
         `}
         </style>
     </div>

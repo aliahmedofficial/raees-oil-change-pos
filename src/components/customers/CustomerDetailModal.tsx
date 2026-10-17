@@ -37,18 +37,18 @@ export function CustomerDetailModal({ customer, onClose }: CustomerDetailModalPr
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black bg-opacity-50 p-2 sm:p-4">
+      <div className="flex min-h-0 max-h-[calc(100dvh-1rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[90dvh] sm:rounded-3xl">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-8">
+        <div className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white sm:p-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="h-16 w-16 bg-white/20 rounded-2xl flex items-center justify-center">
                 <User className="h-8 w-8 text-white" />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold">{customer.name}</h2>
-                <p className="text-blue-100">Customer ID: {customer.id}</p>
+              <div className="min-w-0">
+                <h2 className="break-words text-lg font-bold sm:text-2xl">{customer.name}</h2>
+                <p className="break-all text-xs text-blue-100 sm:text-sm">Customer ID: {customer.id}</p>
               </div>
             </div>
             <button
@@ -60,7 +60,7 @@ export function CustomerDetailModal({ customer, onClose }: CustomerDetailModalPr
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex space-x-1 mt-6">
+          <div className="mt-4 flex flex-wrap gap-2 sm:mt-6">
             {[
               { id: 'details', label: 'Customer Details', icon: User },
               { id: 'transactions', label: 'Transaction History', icon: Receipt },
@@ -68,7 +68,7 @@ export function CustomerDetailModal({ customer, onClose }: CustomerDetailModalPr
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as 'details' | 'transactions')}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all ${
+                className={`flex min-h-11 items-center space-x-2 rounded-xl px-3 py-2 font-medium transition-all sm:px-6 sm:py-3 ${
                   activeTab === tab.id
                     ? 'bg-white text-blue-600 shadow-lg'
                     : 'text-white/80 hover:text-white hover:bg-white/10'
@@ -82,22 +82,22 @@ export function CustomerDetailModal({ customer, onClose }: CustomerDetailModalPr
         </div>
 
         {/* Content */}
-        <div className="p-8 overflow-y-auto max-h-[calc(90vh-200px)]">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
           {activeTab === 'details' && (
             <div className="space-y-8">
               {/* Customer Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-2xl text-white">
+              <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-4 md:gap-6">
+                <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-4 text-white sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-green-100 text-sm font-medium">Total Spent</p>
-                      <p className="text-2xl font-bold">{formatCurrency(totalSpent)}</p>
+                      <p className="break-words text-xl font-bold sm:text-2xl">{formatCurrency(totalSpent)}</p>
                     </div>
                     <ShoppingBag className="h-8 w-8 text-green-200" />
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-2xl text-white">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 text-white sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-blue-100 text-sm font-medium">Transactions</p>
@@ -107,17 +107,17 @@ export function CustomerDetailModal({ customer, onClose }: CustomerDetailModalPr
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 rounded-2xl text-white">
+                <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl p-4 text-white sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-purple-100 text-sm font-medium">Avg. Transaction</p>
-                      <p className="text-2xl font-bold">{formatCurrency(averageTransaction)}</p>
+                      <p className="break-words text-xl font-bold sm:text-2xl">{formatCurrency(averageTransaction)}</p>
                     </div>
                     <CreditCard className="h-8 w-8 text-purple-200" />
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 rounded-2xl text-white">
+                <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-4 text-white sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-orange-100 text-sm font-medium">Credit Available</p>

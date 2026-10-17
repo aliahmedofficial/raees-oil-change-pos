@@ -4,7 +4,11 @@ import { SalesTab } from '../../types';
 import { salesTabsService } from '../../lib/services';
 import { useAuth } from '../../context/AuthContext';
 
-export function SalesTabManager() {
+interface SalesTabManagerProps {
+  orientation?: 'vertical' | 'horizontal';
+}
+
+export function SalesTabManager({ orientation = 'vertical' }: SalesTabManagerProps) {
   const { state, dispatch } = useApp();
   const { user } = useAuth();
 
@@ -88,10 +92,18 @@ export function SalesTabManager() {
     return tab.cart.reduce((sum, item) => sum + item.quantity, 0);
   };
 
+  const isHorizontal = orientation === 'horizontal';
+
   return (
-    <div className="w-16 bg-white border-r border-gray-200 flex flex-col h-full">
+    <div className={`flex flex-shrink-0 bg-white ${isHorizontal
+      ? 'h-14 w-full flex-row items-center border-b border-gray-200'
+      : 'h-full w-16 flex-col border-r border-gray-200'
+    }`}>
       {/* Sale Buttons with Rotated Text */}
-      <div className="flex-1 overflow-y-auto py-2 space-y-1">
+      <div className={`flex min-w-0 flex-1 ${isHorizontal
+        ? 'flex-row items-center gap-2 overflow-x-auto px-2'
+        : 'flex-col space-y-1 overflow-y-auto py-2'
+      }`}>
         {state.salesTabs.map((tab, index) => {
           const isActive = state.activeSalesTab === tab.id;
           const itemCount = getItemCount(tab);
@@ -101,14 +113,17 @@ export function SalesTabManager() {
             <div key={tab.id} className="relative flex flex-col items-center">
               <button
                 onClick={() => switchTab(tab.id)}
-                className={`relative w-12 h-20 rounded-md text-xs font-medium transition-all group flex items-center justify-center ${
+                className={`relative flex flex-shrink-0 items-center justify-center rounded-md text-xs font-medium transition-all group ${isHorizontal
+                  ? 'h-10 min-w-16 px-3'
+                  : 'h-20 w-12'
+                } ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
                 }`}
               >
                 {/* Rotated Text Label */}
-                <div className="transform rotate-90 whitespace-nowrap">
+                <div className={isHorizontal ? 'whitespace-nowrap' : 'transform rotate-90 whitespace-nowrap'}>
                   <span className="text-xs font-medium">
                     Sale {tabNumber}
                   </span>
@@ -144,7 +159,7 @@ export function SalesTabManager() {
       </div>
 
       {/* Add New Sale Button */}
-      <div className="p-1 border-t border-gray-100">
+      <div className={`flex-shrink-0 p-1 ${isHorizontal ? 'border-l border-gray-100' : 'border-t border-gray-100'}`}>
         <button
           onClick={createNewTab}
           className="w-12 h-10 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center mx-auto"

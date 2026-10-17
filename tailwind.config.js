@@ -49,7 +49,7 @@ export default {
         gray: invoiceNeutral,
         slate: invoiceNeutral,
         stone: invoiceNeutral,
-        black: 'var(--raees-ink)',
+        black: 'rgb(var(--raees-ink-rgb) / <alpha-value>)',
       },
     },
   },

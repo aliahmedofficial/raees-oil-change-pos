@@ -71,10 +71,10 @@ export function Settings() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-8">
+    <div className="mx-auto w-full max-w-4xl space-y-6 p-3 sm:space-y-8 sm:p-6">
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-          <h1 className="text-3xl font-bold text-gray-900">System Settings</h1>
+        <div className="border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-5 sm:px-8 sm:py-6">
+          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">System Settings</h1>
           <p className="text-gray-600 mt-2">Configure your POS system preferences and store information</p>
           {!canEditSettings && (
             <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center space-x-3">
@@ -86,7 +86,7 @@ export function Settings() {
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-10">
+        <form onSubmit={handleSubmit} className="space-y-8 p-4 sm:space-y-10 sm:p-8">
           {/* Store Information */}
           <div className="space-y-6">
             <div className="flex items-center space-x-3 mb-6">
@@ -321,8 +321,8 @@ export function Settings() {
             </div>
             
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+              <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center space-x-4">
                   <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <Users className="h-6 w-6 text-white" />
                   </div>
@@ -340,11 +340,11 @@ export function Settings() {
           </div>
 
           {/* Save Button */}
-          <div className="flex justify-end pt-8 border-t border-gray-200">
+            <div className="flex justify-end pt-6 border-t border-gray-200 sm:pt-8">
             <button
               type="submit"
               disabled={!canEditSettings}
-              className={`flex items-center space-x-3 px-8 py-4 rounded-xl transition-all duration-200 font-semibold shadow-lg ${
+              className={`flex min-h-12 w-full items-center justify-center space-x-3 rounded-xl px-6 py-3 font-semibold shadow-lg transition-all duration-200 sm:w-auto sm:px-8 sm:py-4 ${
                 canEditSettings 
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'

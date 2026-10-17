@@ -7,9 +7,10 @@ import { formatCurrency } from '../../lib/currency';
 interface CartProps {
   onCheckout: () => void;
   onSaveDraft: () => void;
+  onClose?: () => void;
 }
 
-export function Cart({ onCheckout, onSaveDraft }: CartProps) {
+export function Cart({ onCheckout, onSaveDraft, onClose }: CartProps) {
   const { state, dispatch } = useApp();
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
@@ -97,12 +98,12 @@ export function Cart({ onCheckout, onSaveDraft }: CartProps) {
   const total = subtotal - totalDiscount;
 
   return (
-    <div className={`bg-white border-l border-gray-100 flex flex-col h-screen ${
-      isTouchMode ? 'w-96' : 'w-80'
-    } max-w-full`}>
+    <div className={`flex h-full min-h-0 w-full max-w-full flex-col bg-white xl:border-l xl:border-gray-100 ${
+      isTouchMode ? 'xl:w-96' : 'xl:w-80'
+    }`}>
       {/* Cart Header */}
       <div className="p-4 lg:p-6 border-b border-gray-100 flex-shrink-0">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-4 flex items-center justify-between gap-2 sm:mb-6">
           <h2 className={`font-bold text-gray-900 ${isTouchMode ? 'text-xl' : 'text-lg'}`}>
             Shopping Cart
           </h2>
@@ -112,6 +113,15 @@ export function Cart({ onCheckout, onSaveDraft }: CartProps) {
               {state.cart.length} items
             </span>
           </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              aria-label="Close cart"
+              className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100 xl:hidden"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          )}
         </div>
 
         {/* Customer Selection */}
@@ -183,7 +193,7 @@ export function Cart({ onCheckout, onSaveDraft }: CartProps) {
       </div>
 
       {/* Cart Items */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 lg:p-6 space-y-4" style={{
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-4" style={{
         scrollbarWidth: 'thin',
         scrollbarColor: '#d1d5db #f3f4f6'
       }}>
