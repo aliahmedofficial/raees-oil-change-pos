@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Raees Oil Change POS
 
 A modern, feature-rich Point of Sale (POS) system built with React, TypeScript, and Supabase. Designed for retail businesses of all sizes with comprehensive inventory management, sales tracking, customer management, and analytics.
@@ -323,3 +324,6 @@ For questions about licensing terms or to request commercial usage rights, pleas
 **Last Updated**: August 2025  
 **Developed by**: Chandira Ekanayaka  
 **Contact**: info@iamchandira.com
+=======
+# raees-oil-change-pos
+>>>>>>> bb4f8425aca3f7c64c5d2932989695df88181610
