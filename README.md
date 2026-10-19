@@ -106,6 +106,8 @@ A modern, feature-rich Point of Sale (POS) system built with React, TypeScript, 
    
    -- Create performance indexes
    CREATE INDEX IF NOT EXISTS idx_products_active ON products(active);
+   CREATE INDEX IF NOT EXISTS idx_products_active_name
+     ON products(active, name);
    CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
    CREATE INDEX IF NOT EXISTS idx_sales_timestamp ON sales(created_at);
    CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);

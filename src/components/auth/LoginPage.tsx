@@ -28,9 +28,8 @@ export function LoginPage() {
       } else {
         await signIn(credentials.email, credentials.password);
       }
-    } catch (error: any) {
-      // Errors are now handled by the AuthContext with SweetAlert2 toasts
-      console.debug('Login error handled by AuthContext:', error.message);
+    } catch {
+      // Authentication errors are shown by AuthContext.
     }
   };
 
@@ -125,6 +124,7 @@ export function LoginPage() {
                   onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
                   className="input pl-10 pr-12 h-11"
                   placeholder="Enter your password"
+                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
                   required
                   minLength={6}
                 />

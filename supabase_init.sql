@@ -562,6 +562,7 @@ GRANT USAGE ON SCHEMA public TO anon;
 -- Create composite indexes for complex queries (function-free for compatibility)
 CREATE INDEX IF NOT EXISTS idx_sales_created_at_status ON sales(created_at, status);
 CREATE INDEX IF NOT EXISTS idx_products_category_active ON products(category, active);
+CREATE INDEX IF NOT EXISTS idx_products_active_name ON products(active, name);
 CREATE INDEX IF NOT EXISTS idx_customers_name_text ON customers(name text_pattern_ops);
 
 -- ================================================================

@@ -3,7 +3,7 @@ import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import Swal from 'sweetalert2';
 import { supabase } from '../lib/supabase';
 import { User } from '../types';
-import { usersService } from '../lib/services';
+import { getSafeErrorInfo, usersService } from '../lib/services';
 import { swalConfig } from '../lib/sweetAlert';
 
 interface AuthContextType {
@@ -21,7 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // Helper function to convert auth error messages to user-friendly text
 function getAuthErrorMessage(errorMessage: string): string {
-  if (errorMessage.includes('Invalid login credentials')) {
+  if (/invalid login credentials/i.test(errorMessage)) {
     return 'Invalid email or password. Please check your credentials and try again.'
   }
   if (errorMessage.includes('Email not confirmed')) {
@@ -46,6 +46,25 @@ function getAuthErrorMessage(errorMessage: string): string {
   return 'An unexpected error occurred. Please try again.'
 }
 
+function getErrorMessage(error: unknown): string {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+  return error instanceof Error ? error.message : '';
+}
+
+function isInvalidRefreshTokenError(error: unknown): boolean {
+  const info = getSafeErrorInfo(error);
+  return /refresh token.*(not found|invalid|expired)|invalid.*refresh token/i.test(
+    `${info.code ?? ''} ${info.message}`
+  );
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profile, setProfile] = useState<User | null>(null)
@@ -53,32 +72,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        loadProfile(session.user.id)
-      } else {
-        setLoading(false)
-      }
-    })
-
-    // Listen for auth changes
+    let active = true;
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active || event === 'INITIAL_SESSION') return;
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        loadProfile(session.user.id)
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          window.setTimeout(() => {
+            if (active) void loadProfile(session.user.id)
+          }, 0)
+        }
       } else {
         setProfile(null)
         setLoading(false)
       }
     })
 
-    return () => subscription.unsubscribe()
+    void supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error) {
+        if (isInvalidRefreshTokenError(error)) {
+          const { error: clearError } = await supabase.auth.signOut({
+            scope: 'local',
+          });
+          if (clearError && import.meta.env.DEV) {
+            console.error('[Auth] Could not clear invalid local session', {
+              ...getSafeErrorInfo(clearError),
+            });
+          }
+          if (active) {
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setLoading(false);
+          }
+          return;
+        }
+        throw error;
+      }
+
+      if (!active) return;
+      if (!session) {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      setSession(session);
+      setUser(session.user);
+      await loadProfile(session.user.id);
+    }).catch((error: unknown) => {
+      if (import.meta.env.DEV) {
+        console.error('[Auth] Could not restore session', {
+          ...getSafeErrorInfo(error),
+        });
+      }
+      if (active) setLoading(false);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    }
   }, [])
 
   async function loadProfile(userId: string) {
@@ -105,7 +163,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
       }
     } catch (error) {
-      console.error('Error loading profile:', error)
+      if (import.meta.env.DEV) {
+        console.error('[Auth] Could not load user profile', {
+          ...getSafeErrorInfo(error),
+        });
+      }
       Swal.fire({
         icon: 'error',
         title: 'Profile Error',
@@ -132,11 +194,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Show success toast with our styled config
       swalConfig.success('Welcome back! You have successfully signed in.');
-    } catch (error: any) {
+    } catch (error: unknown) {
       setLoading(false)
       
       // Show error toast with our styled config
-      swalConfig.error(`Sign In Failed: ${getAuthErrorMessage(error.message)}`);
+      swalConfig.error(`Sign In Failed: ${getAuthErrorMessage(getErrorMessage(error))}`);
       throw error
     }
   }
@@ -173,7 +235,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .single()
 
         if (profileError) {
-          console.error('Profile creation error:', profileError)
+          if (import.meta.env.DEV) {
+            console.error('[Auth] Could not create user profile', {
+              ...getSafeErrorInfo(profileError),
+            });
+          }
           throw new Error(`Failed to create user profile: ${profileError.message}`)
         }
 
@@ -197,11 +263,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Show success toast with our styled config
       swalConfig.success('Account Created! Your account has been created successfully.');
-    } catch (error: any) {
+    } catch (error: unknown) {
       setLoading(false)
       
       // Show error toast with our styled config
-      swalConfig.error(`Sign Up Failed: ${getAuthErrorMessage(error.message)}`);
+      swalConfig.error(`Sign Up Failed: ${getAuthErrorMessage(getErrorMessage(error))}`);
       throw error
     }
   }
@@ -214,11 +280,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Show success toast with our styled config
       swalConfig.success('Signed Out! You have been successfully signed out.');
-    } catch (error: any) {
+    } catch (error: unknown) {
       setLoading(false)
       
       // Show error toast with our styled config
-      swalConfig.error(`Sign Out Failed: ${getAuthErrorMessage(error.message)}`);
+      swalConfig.error(`Sign Out Failed: ${getAuthErrorMessage(getErrorMessage(error))}`);
       throw error
     }
   }

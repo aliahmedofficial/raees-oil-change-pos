@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, CreditCard, Banknote, Smartphone, Check, Receipt, AlertCircle, Gift } from 'lucide-react';
 import { Sale, CardDetails, AppliedDiscount, CartItem } from '../../types';
-import { useApp, checkDiscountEligibility, useInvoiceGeneration } from '../../context/SupabaseAppContext';
+import { useApp, useInvoiceGeneration } from '../../context/SupabaseAppContext';
+import { checkDiscountEligibility } from '../../lib/discountUtils';
 import { useAuth } from '../../context/AuthContext';
 import { ReceiptPrint } from './ReceiptPrint';
 import { salesService, customersService, productsService } from '../../lib/services';

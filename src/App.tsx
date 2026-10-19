@@ -15,7 +15,7 @@ import { UserManager } from './components/users/UserManager';
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const { state } = useApp();
+  const { state, reloadData } = useApp();
   const [currentView, setCurrentView] = useState('pos');
 
   // Show loading spinner while auth is loading
@@ -102,7 +102,33 @@ function AppContent() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : (
-          renderCurrentView()
+          <>
+            {state.error && (
+              <section
+                role="alert"
+                className="m-4 rounded-lg border border-red-200 bg-red-50 p-6 text-red-900 lg:m-6"
+              >
+                <h1 className="text-xl font-semibold">
+                  Some store data could not be loaded
+                </h1>
+                <p className="mt-2">
+                  Successfully loaded data remains available. Failed sections
+                  may be incomplete until the database request succeeds.
+                </p>
+                <p className="mt-3 whitespace-pre-line break-words font-mono text-sm">
+                  {state.error}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void reloadData()}
+                  className="mt-4 rounded-md bg-red-700 px-4 py-2 font-medium text-white hover:bg-red-800"
+                >
+                  Retry loading data
+                </button>
+              </section>
+            )}
+            {renderCurrentView()}
+          </>
         )}
       </main>
     </div>

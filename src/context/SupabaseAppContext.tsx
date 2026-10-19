@@ -1,8 +1,12 @@
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import {
-  Product, Customer, Sale, User, Discount, CartItem, AppSettings, SalesTab, DiscountCondition, AppliedDiscount, CardDetails
+  Product, Customer, Sale, User, Discount, CartItem, AppSettings, SalesTab, AppliedDiscount, CardDetails
 } from '../types';
 import { useAuth } from './AuthContext';
+import {
+  generateNextInvoiceNumber,
+  getNextInvoiceNumber,
+} from '../lib/invoiceUtils';
 import {
   productsService,
   customersService,
@@ -10,7 +14,9 @@ import {
   discountsService,
   settingsService,
   usersService,
-  salesTabsService
+  salesTabsService,
+  getSafeErrorInfo,
+  logDatabaseRequest,
 } from '../lib/services';
 
 interface AppState {
@@ -91,6 +97,34 @@ const initialState: AppState = {
   loading: false,
   error: null,
 };
+
+type LoadOutcome<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: unknown };
+
+async function loadRequest<T>(
+  name: string,
+  request: () => Promise<T>
+): Promise<LoadOutcome<T>> {
+  try {
+    return { ok: true, data: await logDatabaseRequest(name, request) };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+
+function applyLoadResult<T>(
+  service: string,
+  outcome: LoadOutcome<T>,
+  apply: (data: T) => void,
+  failures: string[]
+): void {
+  if (outcome.ok) {
+    apply(outcome.data);
+  } else {
+    failures.push(`${service}: ${formatLoadError(outcome.error)}`);
+  }
+}
 
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
@@ -226,6 +260,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 const AppContext = createContext<{
   state: AppState;
   dispatch: React.Dispatch<AppAction>;
+  reloadData: () => Promise<void>;
 } | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -262,55 +297,109 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   async function loadData() {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      // Load all data in parallel
+      const failures: string[] = [];
       const [
-        products,
-        customers,
-        sales,
-        discounts,
-        settings,
-        users,
-        salesTabs
+        productsResult,
+        customersResult,
+        salesResult,
+        discountsResult,
+        settingsResult,
+        usersResult,
+        salesTabsResult,
       ] = await Promise.all([
-        productsService.getAll(),
-        customersService.getAll(),
-        salesService.getAll(),
-        discountsService.getAll(),
-        settingsService.get(),
-        usersService.getAll(),
-        user ? salesTabsService.getByUserId(user.id) : Promise.resolve([])
+        loadRequest('loadData.products', () =>
+          productsService.getAll((error) => {
+            failures.push(`product batches: ${formatLoadError(error)}`);
+          })
+        ),
+        loadRequest('loadData.customers', () => customersService.getAll()),
+        loadRequest('loadData.sales', () => salesService.getAll()),
+        loadRequest('loadData.discounts', () => discountsService.getAll()),
+        loadRequest('loadData.settings', () => settingsService.get()),
+        loadRequest('loadData.users', () => usersService.getAll()),
+        user
+          ? loadRequest('loadData.salesTabs', () =>
+              salesTabsService.getByUserId(user.id)
+            )
+          : Promise.resolve<LoadOutcome<SalesTab[]>>({
+              ok: true,
+              data: [],
+            }),
       ]);
 
-      dispatch({ type: 'SET_PRODUCTS', payload: products });
-      dispatch({ type: 'SET_CUSTOMERS', payload: customers });
-      dispatch({ type: 'SET_SALES', payload: sales });
-      dispatch({ type: 'SET_DISCOUNTS', payload: discounts });
-      dispatch({ type: 'SET_SETTINGS', payload: settings });
-      dispatch({ type: 'SET_USERS', payload: users });
-      dispatch({ type: 'SET_SALES_TABS', payload: salesTabs });
+      applyLoadResult(
+        'products',
+        productsResult,
+        (data) => dispatch({ type: 'SET_PRODUCTS', payload: data }),
+        failures
+      );
+      applyLoadResult(
+        'customers',
+        customersResult,
+        (data) => dispatch({ type: 'SET_CUSTOMERS', payload: data }),
+        failures
+      );
+      applyLoadResult(
+        'sales',
+        salesResult,
+        (data) => dispatch({ type: 'SET_SALES', payload: data }),
+        failures
+      );
+      applyLoadResult(
+        'discounts',
+        discountsResult,
+        (data) => dispatch({ type: 'SET_DISCOUNTS', payload: data }),
+        failures
+      );
+      applyLoadResult(
+        'settings',
+        settingsResult,
+        (data) => dispatch({ type: 'SET_SETTINGS', payload: data }),
+        failures
+      );
+      applyLoadResult(
+        'users',
+        usersResult,
+        (data) => dispatch({ type: 'SET_USERS', payload: data }),
+        failures
+      );
+      applyLoadResult(
+        'sales tabs',
+        salesTabsResult,
+        (data) => dispatch({ type: 'SET_SALES_TABS', payload: data }),
+        failures
+      );
 
       // Create initial sales tab if none exist
-      if (salesTabs.length === 0 && user) {
+      if (salesTabsResult.ok && salesTabsResult.data.length === 0 && user) {
         const initialTab: Omit<SalesTab, 'id' | 'createdAt'> = {
           name: 'Sale 1',
           cart: [],
           selectedCustomer: null,
         };
-        const newTab = await salesTabsService.create(user.id, initialTab);
-        dispatch({ type: 'ADD_SALES_TAB', payload: newTab });
+        const initialTabResult = await loadRequest(
+          'loadData.salesTabs.createInitial',
+          () => salesTabsService.create(user.id, initialTab)
+        );
+        applyLoadResult(
+          'initial sales tab',
+          initialTabResult,
+          (data) => dispatch({ type: 'ADD_SALES_TAB', payload: data }),
+          failures
+        );
       }
 
-      dispatch({ type: 'SET_ERROR', payload: null });
-    } catch (error: any) {
-      console.error('Error loading data:', error);
-      dispatch({ type: 'SET_ERROR', payload: error.message });
+      dispatch({
+        type: 'SET_ERROR',
+        payload: failures.length > 0 ? failures.join('\n') : null,
+      });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
   }
 
   return (
-    <AppContext.Provider value={{ state, dispatch }}>
+    <AppContext.Provider value={{ state, dispatch, reloadData: loadData }}>
       {children}
     </AppContext.Provider>
   );
@@ -324,90 +413,13 @@ export function useApp() {
   return context;
 }
 
-// Utility function to check if discounts apply
-export function checkDiscountEligibility(
-  discount: Discount,
-  cart: CartItem[],
-  customer: Customer | null,
-  paymentMethod: string,
-  total: number,
-  cardDetails?: { cardType?: string; bankName?: string }
-): boolean {
-  // Check if discount is active and within valid period
-  if (!discount.active) return false;
-  
-  const now = new Date();
-  if (now < discount.validFrom || now > discount.validTo) return false;
+function formatLoadError(error: unknown): string {
+  const info = getSafeErrorInfo(error);
+  const code = info.code ? ` (code ${info.code})` : '';
+  const details = info.details ? ` Details: ${info.details}` : '';
+  const hint = info.hint ? ` Hint: ${info.hint}` : '';
 
-  // Check valid days
-  if (discount.validDays && discount.validDays.length > 0) {
-    const currentDay = now.getDay();
-    if (!discount.validDays.includes(currentDay)) return false;
-  }
-
-  // Check conditions
-  for (const condition of discount.conditions) {
-    if (!checkCondition(condition, cart, customer, paymentMethod, total, cardDetails)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function checkCondition(
-  condition: DiscountCondition,
-  cart: CartItem[],
-  customer: Customer | null,
-  paymentMethod: string,
-  total: number,
-  cardDetails?: { cardType?: string; bankName?: string }
-): boolean {
-  switch (condition.type) {
-    case 'min_amount':
-      return total >= condition.value;
-    
-    case 'specific_products':
-      if (!Array.isArray(condition.value)) return false;
-      const requiredProducts = condition.value;
-      const minQuantity = condition.minQuantity || 1;
-      
-      for (const productId of requiredProducts) {
-        const cartItem = cart.find(item => item.product.id === productId);
-        if (!cartItem || cartItem.quantity < minQuantity) {
-          return false;
-        }
-      }
-      return true;
-    
-    case 'payment_method':
-      return paymentMethod === condition.value;
-    
-    case 'customer_tier':
-      return customer?.priceTier === condition.value;
-    
-    case 'card_type':
-      return paymentMethod === 'card' && cardDetails?.cardType === condition.value;
-    
-    case 'bank_name':
-      return paymentMethod === 'card' && cardDetails?.bankName === condition.value;
-    
-    default:
-      return true;
-  }
-}
-
-// Generate invoice number utility
-export function getNextInvoiceNumber(settings: AppSettings): string {
-  const nextCounter = settings.invoiceCounter + 1;
-  return `${settings.invoicePrefix}-${nextCounter.toString().padStart(6, '0')}`;
-}
-
-// Generate next invoice number and return data for updating settings
-export function generateNextInvoiceNumber(settings: AppSettings): { invoiceNumber: string; newCounter: number } {
-  const newCounter = settings.invoiceCounter + 1;
-  const invoiceNumber = `${settings.invoicePrefix}-${newCounter.toString().padStart(6, '0')}`;
-  return { invoiceNumber, newCounter };
+  return `${info.message}${code}${details}${hint}`;
 }
 
 // Generate invoice number and automatically update counter in state
@@ -427,15 +439,6 @@ export function useInvoiceGeneration() {
     
     return invoiceNumber;
   };
-}
-
-// Utility functions for invoice counter management
-export function resetInvoiceCounter(dispatch: any, newCounter: number = 0) {
-  dispatch({ type: 'INCREMENT_INVOICE_COUNTER', payload: newCounter });
-}
-
-export function setInvoicePrefix(dispatch: any, prefix: string) {
-  dispatch({ type: 'SET_SETTINGS', payload: { invoicePrefix: prefix } });
 }
 
 // Hook for invoice statistics
